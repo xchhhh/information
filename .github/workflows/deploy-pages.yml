@@ -1,0 +1,41 @@
+name: Deploy Frontend to GitHub Pages
+
+# 触发：推到 main 分支，或手动在 Actions 页面点 Run workflow
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 赋予 Pages 发布所需权限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时间只允许一个发布
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 配置 GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: 打包前端产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # 前端单文件目录；其下的 index.html 即为站点入口
+          path: frontend
+
+      - name: 发布到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

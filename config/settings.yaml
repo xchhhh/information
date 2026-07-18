@@ -1,0 +1,57 @@
+# ============ 集中配置：所有“旋钮”都放这里，改这里不用改代码 ============
+# 密钥不写在此文件，统一从 .env 经 python-dotenv 读取
+
+embedding:
+  provider: ollama          # 本地开发用 ollama；部署到免费 PaaS 时改成 doubao
+  model: mxbai-embed-large  # Ollama 本地 embedding 模型名（1024 维）
+  base_url: http://localhost:11434   # Ollama 服务地址（本地）
+  dim: 1024                 # 向量维度，必须和 Milvus 稠密字段一致
+  # 下面这段仅当 provider=doubao 时启用（部署到云端用，本地开发可忽略）
+  doubao:
+    model: doubao-embedding-vision-250615   # 火山方舟多模态 embedding 模型
+    base_url: https://ark.cn-beijing.volces.com/api/v3  # 火山方舟 API 地址
+    dimensions: 1024        # 显式指定 1024 维，和本地 Ollama 一致，Milvus schema 通用
+    api_key_env: ARK_API_KEY   # 真实密钥从环境变量读（写在 .env 里）
+
+milvus:
+  mode: standalone          # 本地开发用 standalone（Docker）；部署到免费 PaaS 改 lite
+  host: localhost           # standalone 主机
+  port: 19530               # standalone 端口
+  lite_path: ./milvus_lite.db   # mode=lite 时用的嵌入式文件（免 Docker）
+  collection: personal_rag  # 集合（相当于表）名
+  dense_field: dense_vec    # 稠密向量字段名
+  metric_type: L2           # 距离度量（L2 / COSINE）
+
+chunking:
+  chunk_size: 500           # 每块最大字符数（中文按字符切）
+  chunk_overlap: 80         # 相邻块重叠字符，保上下文连贯
+
+retrieval:
+  top_k_retrieve: 20        # 每条检索路（稠密 / BM25）先各召回前 20
+  top_k_final: 4            # 融合 + 重排后，真正送进 LLM 的段落数
+  rrf_k: 60                 # RRF 融合常数（标准默认 60）
+  fusion_strategy: rrf      # 融合策略：rrf（倒数排名融合），最稳
+
+reranker:
+  model: BAAI/bge-reranker-v2-m3   # 跨编码器重排模型（本地加载）
+
+llm:
+  provider: deepseek
+  base_url: https://api.deepseek.com   # DeepSeek 的 OpenAI 兼容接口地址
+  model: deepseek-chat
+  temperature: 0.3
+  # api_key 从环境变量 LLM_API_KEY 读，不写在这里（防泄露）
+
+langfuse:
+  enabled: false            # 先关；接 Langfuse 可观测后再开
+  host: https://cloud.langfuse.com
+  public_key_env: LANGFUSE_PUBLIC_KEY
+  secret_key_env: LANGFUSE_SECRET_KEY
+
+cache:
+  enabled: false            # 先关；接语义缓存后再开
+  similarity: 0.95          # 命中缓存的余弦相似度阈值
+
+auth:
+  api_keys:                 # 网站调用后端时的鉴权 key 列表（部署前务必改掉 change_me）
+    - change_me

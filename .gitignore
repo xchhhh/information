@@ -1,0 +1,8 @@
+.venv/
+.env
+data/
+milvus_data/
+__pycache__/
+*.pyc
+.idea/
+volumes/

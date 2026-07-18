@@ -1,0 +1,14 @@
+[
+  {
+    "question": "你的姓名是什么？",
+    "reference": "许成合"
+  },
+  {
+    "question": "你擅长哪些技术方向？",
+    "reference": "大模型应用开发、AI 应用工程"
+  },
+  {
+    "question": "你做过哪些项目？",
+    "reference": "个人 RAG 知识库系统"
+  }
+]
