@@ -1,6 +1,7 @@
 # Cloud-friendly deploy deps: milvus-lite embedded (no Docker) + cloud doubao embedding + rerank fallback
 # Dropped langchain-ollama / sentence-transformers / transformers (cloud needs no local Ollama/rerank model)
 fastapi
+python-multipart
 uvicorn
 pydantic
 python-dotenv

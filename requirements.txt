@@ -8,6 +8,7 @@ sentence-transformers
 transformers
 rank_bm25
 fastapi
+python-multipart
 uvicorn
 pydantic
 python-dotenv
