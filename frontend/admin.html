@@ -349,6 +349,7 @@
         ③ 重新入库
       </h2>
       <p class="hint">把 data/raw 的资料向量化写入 Milvus 并生成 BM25 语料。首次部署或改了资料后点这里。</p>
+      <p class="hint">提示：从 data/raw 中删除文件后，也必须点一次重新入库，否则已删除的旧文件仍会出现在回答来源里。</p>
       <button id="btnIngestReset" class="btn" type="button">清空旧索引并重新入库</button>
       <button id="btnIngestAppend" class="btn ghost" type="button" style="margin-left:8px;">仅追加入库</button>
       <div id="ingestResult" class="result"></div>
