@@ -32,8 +32,13 @@ async def chat(req: ChatReq, request: Request, api_key: str = Depends(get_api_ke
     # 1) 限流：按客户端 IP
     if not limiter.allow(request.client.host):
         raise HTTPException(status_code=429, detail="Too many requests")
-    # 2) 调问答主流程
-    result = rag_answer(req.query)
+    # 2) 调问答主流程；捕获意外异常，返回清晰提示而非裸 500，便于定位
+    try:
+        result = rag_answer(req.query)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=503, detail=f"知识库尚未入库：{e}")
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"问答处理失败：{type(e).__name__}: {e}")
     return ChatResp(answer=result["answer"], sources=result["sources"])
 
 @app.get("/health")    # 健康检查，部署/探活用

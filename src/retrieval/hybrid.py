@@ -15,18 +15,36 @@ def _entity(item):
 
 class HybridRetriever:
     # 混合检索：稠密向量（Milvus）+ 稀疏 BM25 -> RRF 倒数排名融合
+    _BM25_PATH = os.path.join(BASE_DIR, "data", "processed", "bm25_corpus.pkl")
+
     def __init__(self):
         self.embedder = get_embedder()    # 查询用的 embedder（必须和入库一致）
-        # 加载入库时生成的 BM25 语料
-        path = os.path.join(BASE_DIR, "data", "processed", "bm25_corpus.pkl")
-        if not os.path.exists(path):
+        self._mtime = None                # 记录 BM25 语料文件的修改时间，用于检测入库后变更
+        self._load_corpus()               # 首次加载语料 + 构建 BM25 索引
+
+    def _load_corpus(self):
+        # 从入库生成的 pickle 载入语料，并重建 BM25 索引
+        if not os.path.exists(self._BM25_PATH):
             raise FileNotFoundError("未找到 BM25 语料，请先运行 python src/ingestion/run.py 完成入库")
-        with open(path, "rb") as f:
+        self._mtime = os.path.getmtime(self._BM25_PATH)   # 记下当前修改时间
+        with open(self._BM25_PATH, "rb") as f:
             self.corpus = pickle.load(f)          # list of {chunk_id, text, source}
         self.texts = [c["text"] for c in self.corpus]
         self.bm25 = BM25Okapi([_tokenize(t) for t in self.texts])  # 建 BM25 索引
 
+    def _ensure_fresh(self):
+        # 关键修复：入库（/admin/ingest）会更新 bm25_corpus.pkl 并写入新 chunk_id，
+        # 若不刷新内存中的索引，会与 Milvus 中新的向量不一致、检索时 KeyError -> 导致 /chat 返回 500。
+        # 这里每次检索前比对文件修改时间，若已被入库更新则自动重载，保证内存索引与向量库一致。
+        try:
+            mtime = os.path.getmtime(self._BM25_PATH)
+        except OSError:
+            return   # 文件暂不存在（入库进行中）就维持现状，下一请求再试
+        if mtime != self._mtime:
+            self._load_corpus()
+
     def retrieve(self, query):
+        self._ensure_fresh()              # 检索前确保语料是最新入库的版本
         r = settings["retrieval"]
         k = r["top_k_retrieve"]                    # 每路先召回前 20
         # 1) 稠密检索：query 向量化后去 Milvus 搜
@@ -58,4 +76,5 @@ class HybridRetriever:
         # 按融合分排序，取前 k 个候选
         ranked = sorted(fused, key=lambda c: fused[c], reverse=True)
         cid2meta = {c["chunk_id"]: c for c in self.corpus}
-        return [cid2meta[c] for c in ranked[:k]]   # 返回融合后的候选段（含 text/source/chunk_id）
+        # 防御：仅保留内存语料中确实存在、且与 Milvus 命中一致的块，避免极少见的时序错位导致 KeyError
+        return [m for m in (cid2meta.get(c) for c in ranked[:k]) if m is not None]

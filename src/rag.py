@@ -13,6 +13,12 @@ def _get_retriever():
         _retriever = HybridRetriever()
     return _retriever
 
+def reset_retriever():
+    # 入库（/admin/ingest）成功后调用：清空检索单例，
+    # 下次 /chat 会用最新 bm25_corpus.pkl 自动重建，避免内存索引与 Milvus 不一致导致 500
+    global _retriever
+    _retriever = None
+
 @trace_step("answer")   # 给整段问答打追踪点：settings 里 langfuse.enabled=true 时，可在 Langfuse 看到这次调用
 def answer(query):
     # 企业级问答主线：缓存 -> 改写 -> 混合检索 -> 重排 -> 生成

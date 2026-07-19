@@ -94,6 +94,14 @@ async def ingest(reset: bool = False):
     from ingestion.run import main as ingest_main
     ingest_main()
 
+    # 让正在运行的服务刷新内存中的检索索引（BM25 语料已更新、含新 chunk_id），
+    # 否则下次 /chat 会因内存索引与 Milvus 不一致而 KeyError -> HTTP 500
+    try:
+        from rag import reset_retriever
+        reset_retriever()
+    except Exception:
+        pass   # 即使刷新失败，hybrid 也会在下一次 retrieve 时按文件 mtime 自动重载
+
     # 重新统计入库后的向量条数返回
     vector_count = 0
     try:
