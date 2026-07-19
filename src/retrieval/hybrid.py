@@ -33,6 +33,7 @@ class HybridRetriever:
         qvec = self.embedder.embed_query(query)
         from ingestion.milvus_client import get_client, ensure_collection
         client = get_client(); ensure_collection(client)
+        client.load_collection(collection_name=settings["milvus"]["collection"])  # milvus-lite 必须先 load 才能 search
         dense_hits = client.search(
             collection_name=settings["milvus"]["collection"],
             data=[qvec], limit=k,

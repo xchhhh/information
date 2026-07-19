@@ -23,7 +23,7 @@ class DoubaoEmbeddings:
             timeout=30,
         )
         resp.raise_for_status()                 # 非 200 直接抛错
-        return resp.json()["data"][0]["embedding"]  # 取回向量（列表）
+        return resp.json()["data"]["embedding"]      # 取回向量（列表），注意 data 是对象非数组
 
     def embed_documents(self, texts):
         return [self._embed_one(t) for t in texts]   # 批量向量化（入库用）
