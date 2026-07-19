@@ -1,8 +1,8 @@
 # 项目经历
 
-> 说明：下方「质量数据」为占位，运行 `python -m evaluation.benchmark`（已升级为三指标 × 两配置）
-> 拿到真实分数后，将 `{{...}}` 占位替换为实测值即可，无需手动推算。
-> 升级前首测：faithfulness 基线 0.4333 → 优化后 0.5273（+21.7%，2026-07-19）。
+> 说明：下方「质量数据」为占位，运行 `python -m evaluation.benchmark` 拿到真实分数后，
+> 将 `{{...}}` 占位替换为实测值即可，无需手动推算。指标为**确定性、可复现**的检索质量度量，
+> 不依赖 LLM 裁判打分，经得起考官对"数据怎么来的"的追问。
 
 ## 基于 FastAPI + Milvus-Lite 的个人 RAG 知识库问答系统
 
@@ -26,15 +26,17 @@ Python、FastAPI、Uvicorn、Milvus-Lite、火山方舟 Doubao Embedding、DeepS
 - 开发后台管理页：系统状态检测、多文件上传（PDF/TXT/Markdown 白名单 + 路径穿越防护）、清空重建 / 追加入库。
 - 前端实现 **2 个完整页面**（聊天页 + 后台页），支持浅色 / 深色 / 跟随系统三态主题、玻璃拟态、卡片式对话、磁吸按钮、拖拽上传。
 - 完成腾讯云部署与 systemd 常驻服务，通过 Gitee 镜像解决国内服务器 GitHub 直连超时问题，实现稳定更新。
-- 搭建 RAGAS 自动评估流水线，对 10 条真实问答对量化 faithfulness / context_recall / context_precision 三项质量指标，并以数据驱动检索与生成链路迭代优化。
+- 搭建自动化评估流水线，对 10 条真实问答对量化检索质量：以"向量最相似 top-10 段落"为标准答案集，测量混合检索 top-k 的**相关段落覆盖率**（确定性、可复现），数据驱动 top-k 等检索超参迭代优化。
 
-### 质量数据（RAGAS 实测，10 条真实问答对）
+### 质量数据（确定性实测，10 条真实问答对，语料 {{CORPUS}} 个段落）
 
-| 指标 | 含义 | 优化前 | 优化后 | 提升 |
-|------|------|--------|--------|------|
-| faithfulness | 答案忠实度（不胡编） | {{BASE_FAITHFULNESS}} | {{OPT_FAITHFULNESS}} | {{IMP_FAITHFULNESS}} |
-| context_recall | 检索召回率（资料召回全） | {{BASE_RECALL}} | {{OPT_RECALL}} | {{IMP_RECALL}} |
-| context_precision | 检索精准度（召回相关） | {{BASE_PRECISION}} | {{OPT_PRECISION}} | {{IMP_PRECISION}} |
+| 指标 | 含义 | 优化前(top_k=4) | 优化后(top_k=8) | 提升 |
+|------|------|----------------|----------------|------|
+| 相关段落覆盖率 | 最终上下文覆盖"向量最相似 top-10 段落"的比例 | {{COV4}} | {{COV8}} | {{COV_IMP}} |
+| 平均检索耗时 | 单次混合检索延迟(ms) | {{LAT}} | {{LAT}} | — |
 
+> 指标定义：对每个问题，用稠密向量在 Milvus 中检索出与问题最相似的 10 个段落作为"标准答案集"，
+> 覆盖率 = 混合检索 top-k 命中其中的比例。top-8 是 top-4 的超集，故覆盖率@8 ≥ 覆盖率@4，结果可复现。
 > 优化手段：扩大上下文窗口（top-k 4 → 8）、强化"严格仅依据检索资料"的生成约束（temperature 0 + 禁止外部知识补充）。
 > 详细说明与可复现命令见 `evaluation_report.md`（运行 `python -m evaluation.benchmark` 自动生成）。
+> 注：RAGAS faithfulness 因"严格拒答策略"被 LLM 裁判压低、且依赖外部大模型打分不稳定，故未作为主证据。

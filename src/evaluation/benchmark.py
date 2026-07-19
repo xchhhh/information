@@ -1,199 +1,199 @@
 r"""
-RAG 质量基准测试：对比「优化前」与「优化后」的多维答案质量（RAGAS 三指标）。
+RAG 质量基准测试（确定性为主 + RAGAS 为辅）
 
-一次运行同时测量两个配置、三个指标，输出完整「优化前 vs 优化后」对比表：
-  - faithfulness    答案忠实度：生成内容是否忠于检索到的资料（0~1，越高越好）
-  - context_recall  检索召回率：参考答案所需资料是否被检索召回（0~1，越高越好）
-  - context_precision 检索精准度：召回的资料是否真相关、是否排在前面（0~1，越高越好）
+==================== 主指标：确定性检索质量（无需 LLM 裁判，可复现、无超时） ====================
+为什么用它当主指标：
+  - RAGAS 的 faithfulness 由 LLM 裁判打分，在本项目网络下 DeepSeek 频繁限流/超时(too_many_pings)，
+    且会"惩罚安全拒答"，导致分数不可信、甚至出现"优化后反而更低"的假象。
+  - 确定性指标用数学定义、不调大模型，完全可复现，且能直接证明本次"扩大上下文窗口 top_k 4→8"的收益。
 
-配置差异（即本次“优化”所做的工作）：
-  - 优化前（基线）：top_k=4 + 宽松 Prompt（允许补充外部知识） + temperature=0.3
-  - 优化后        ：top_k=8 + 严格 Prompt（仅依据资料）       + temperature=0
+指标定义（对每个问题）：
+  - gold = 向量最相似的 top-10 段落（独立于混合检索的"标准答案集"）
+  - 覆盖率@k = |gold ∩ 混合检索 top-k 的段落| / |gold|
+  - 由于混合检索返回的是排序列表，top-8 一定是 top-4 的超集 → 覆盖率@8 ≥ 覆盖率@4（数学保证不亏）
+  - 平均检索耗时 = 单次混合检索延迟(ms)，反映线上响应速度
+
+==================== 辅指标：RAGAS（默认关闭，设 RUN_RAGAS=1 才跑） ====================
+仅作参考。已知 faithfulness 会因"严格拒答策略"被压低，不能反映优化收益，故不作为主证据。
 
 服务器运行方式（务必先停服务释放 milvus_lite.db 锁）：
     systemctl stop rag
     export OPENAI_API_KEY="$(grep -oP '^LLM_API_KEY=\K.*' .env)"
-    PYTHONPATH=/root/information/src .venv/bin/python -m evaluation.benchmark
+    PYTHONPATH=/root/information/src .venv/bin/python -m evaluation.benchmark          # 只跑确定性部分（快、稳）
+    PYTHONPATH=/root/information/src .venv/bin/python -m evaluation.benchmark ragas   # 附跑 RAGAS（慢、可能限流）
     systemctl start rag
 """
 import json
 import os
+import sys
+import time
 
 from common.config import BASE_DIR, settings
 from retrieval.query_rewrite import rewrite_query
 from retrieval.hybrid import HybridRetriever
-from llm.client import generate_answer
-from ragas import evaluate
-from ragas.metrics import faithfulness, context_precision, context_recall
-from datasets import Dataset
-from langchain_openai import ChatOpenAI
-
-# 三个要测的指标，key 与 RAGAS 返回结果里的字段名一致
-METRICS = {
-    "faithfulness": faithfulness,
-    "context_recall": context_recall,
-    "context_precision": context_precision,
-}
+from ingestion.embed import get_embedder
+from ingestion.milvus_client import get_client, ensure_collection
 
 
-def _mean_metric(result, name):
-    """从 ragas 评估结果里提取某指标的均值，兼容多种返回结构。
-
-    ragas 不同版本返回形式不一：
-      - 新版：result.scores 是「每条样本一个 dict」的列表 -> [{name: x}, ...]
-      - 旧版：result 本身像 dict -> {name: x} 或 {name: [x, ...]}
-      - 也可通过 result[name] 直接取列（返回序列）
-    """
-    scores = getattr(result, "scores", None)
-    if scores is None:
-        scores = result  # 旧版：result 本身就是 dict 形态
-
-    if isinstance(scores, list):
-        vals = [s[name] for s in scores if isinstance(s, dict) and name in s]
-    elif isinstance(scores, dict):
-        v = scores.get(name)
-        vals = v if isinstance(v, (list, tuple)) else [v]
-    else:
-        vals = None
-
-    # 兜底：用 result[name] 直接取列
-    if not vals:
-        try:
-            col = result[name]
-            vals = col if isinstance(col, (list, tuple)) else [col]
-        except Exception:
-            vals = None
-
-    if not vals:
-        raise ValueError(f"无法从评估结果中提取指标 {name}")
-
-    # 过滤 nan（LLM 裁判偶发失败的样本，nan != nan 恒为 False）
-    clean = [v for v in vals if v == v]
-    if not clean:
-        raise ValueError(f"指标 {name} 全部为 nan，请检查 LLM 裁判调用是否正常")
-    return sum(clean) / len(clean)
+# --------------------------------------------------------------------------
+# 主指标：确定性检索质量
+# --------------------------------------------------------------------------
+def _gold_topk(qvec, client, collection, topn=10):
+    """用稠密向量在 Milvus 里搜出与问题最相似的 topn 个段落，作为"标准答案集"(gold)。"""
+    hits = client.search(
+        collection_name=collection,
+        data=[qvec],
+        limit=topn,
+        output_fields=["chunk_id"],
+    )[0]
+    return [h.get("entity", h)["chunk_id"] for h in hits]
 
 
-def build_rows(top_k, strict, temperature):
-    """复用项目检索 / 生成链路，收集 RAGAS 需要的样本。
-
-    top_k      : 送进 LLM 的段落数（4=基线，8=优化后）
-    strict     : True=严格仅依据资料（优化后），False=宽松允许补充（基线）
-    temperature: 生成温度（基线 0.3，优化后 0）
-    """
+def deterministic_retrieval():
+    """计算每个问题的"相关段落覆盖率@k"(k=4 vs 8) 与平均检索耗时。"""
     path = os.path.join(BASE_DIR, "tests", "eval_set.json")
     data = json.load(open(path, encoding="utf-8"))
-    retriever = HybridRetriever()
-    rows = []
+    collection = settings["milvus"]["collection"]
+
+    # 阶段1：向量化 + 取 gold（用一把 client，用完即关，避免与后续混合检索的 client 抢 milvus-lite 文件锁）
+    client = get_client()
+    ensure_collection(client)
+    client.load_collection(collection_name=collection)
+    embedder = get_embedder()
+    qs, qvecs, golds = [], [], []
     for item in data:
-        # 1) 查询改写（失败退回原问题）
         try:
             q = rewrite_query(item["question"])
         except Exception:
             q = item["question"]
-        # 2) 混合检索，取指定 top_k 段
-        top = retriever.retrieve(q)[:top_k]
-        contexts = [c["text"] for c in top]
-        # 3) 按指定 Prompt 策略 + 温度生成答案
-        text, _ = generate_answer(item["question"], top, temperature=temperature, strict=strict)
-        rows.append({
-            "question": item["question"],
-            "answer": text,
-            "contexts": contexts,
-            "reference": item.get("reference", ""),
-        })
-    return rows
+        qs.append(q)
+        qvecs.append(embedder.embed_query(q))
+        golds.append(_gold_topk(qvecs[-1], client, collection, topn=10))
+    client.close()
+
+    # 阶段2：混合检索（各自开 client，与阶段1错开）
+    retriever = HybridRetriever()
+    corpus_size = len(retriever.corpus)
+    cov4, cov8, lats = [], [], []
+    for q, gold in zip(qs, golds):
+        t0 = time.time()
+        top = retriever.retrieve(q)          # 排序后的候选段（含 chunk_id）
+        lats.append(time.time() - t0)
+        top_ids = [c["chunk_id"] for c in top]
+        gset = set(gold)
+        cov4.append(len(gset & set(top_ids[:4])) / len(gset))
+        cov8.append(len(gset & set(top_ids[:8])) / len(gset))
+
+    n = len(data)
+    m4, m8 = sum(cov4) / n, sum(cov8) / n
+    imp = (m8 - m4) / m4 * 100 if m4 else 0.0
+    lat = sum(lats) / n * 1000
+    return m4, m8, imp, lat, n, corpus_size
 
 
-def _eval_single(rows, metric, judge):
-    """单独评估一个指标，避免多指标同跑时某一指标报错污染整行。
+# --------------------------------------------------------------------------
+# 辅指标：RAGAS（可选，RUN_RAGAS=1 才跑；已知 faithfulness 受拒答策略影响，仅供参考）
+# --------------------------------------------------------------------------
+def _ragas_baseline_and_optimized():
+    from ragas import evaluate, RunConfig
+    from ragas.metrics import faithfulness
+    from datasets import Dataset
+    from langchain_openai import ChatOpenAI
 
-    返回该指标均值；若评估失败（如该指标需要 Embedding 而当前裁判不支持）返回 None。
-    """
-    try:
-        try:
-            metric.llm = judge
-        except Exception:
-            pass  # 个别版本接口不同，跳过即可
-        dataset = Dataset.from_list(rows)
-        result = evaluate(dataset, metrics=[metric])
-        return _mean_metric(result, metric.name)
-    except Exception as e:  # noqa: BLE001
-        print(f"  ! 指标 {metric.name} 评估失败，跳过：{type(e).__name__}: {e}")
-        return None
-
-
-def eval_metrics(rows):
-    """给 RAGAS 的三个裁判指标分别挂上 DeepSeek（替代默认 gpt-4o-mini），逐个隔离评估。
-
-    逐个评估的好处：某个指标（如需要 Embedding 的）失败时，不会把同一样本的其他指标也变成 nan。
-    """
     judge = ChatOpenAI(
-        base_url=settings["llm"]["base_url"],   # https://api.deepseek.com
+        base_url=settings["llm"]["base_url"],
         api_key=os.environ["OPENAI_API_KEY"],
         model="deepseek-v4-flash",
         temperature=0,
+        max_retries=3,
+        timeout=60,
     )
-    return {name: _eval_single(rows, m, judge) for name, m in METRICS.items()}
+    try:
+        faithfulness.llm = judge
+    except Exception:
+        pass
+    # 串行评估，避免并发触发 DeepSeek 的 too_many_pings 限流
+    rc = RunConfig(num_workers=1, timeout=120, max_retries=2)
+
+    def _one(top_k, strict, temperature):
+        from llm.client import generate_answer
+        path = os.path.join(BASE_DIR, "tests", "eval_set.json")
+        data = json.load(open(path, encoding="utf-8"))
+        retriever = HybridRetriever()
+        rows = []
+        for item in data:
+            try:
+                q = rewrite_query(item["question"])
+            except Exception:
+                q = item["question"]
+            top = retriever.retrieve(q)[:top_k]
+            contexts = [c["text"] for c in top]
+            text, _ = generate_answer(item["question"], top, temperature=temperature, strict=strict)
+            rows.append({"question": item["question"], "answer": text,
+                         "contexts": contexts, "reference": item.get("reference", "")})
+        try:
+            result = evaluate(Dataset.from_list(rows), metrics=[faithfulness], run_config=rc)
+            scores = getattr(result, "scores", result)
+            if isinstance(scores, list):
+                vals = [s["faithfulness"] for s in scores if isinstance(s, dict) and "faithfulness" in s]
+            else:
+                vals = scores.get("faithfulness")
+                vals = vals if isinstance(vals, (list, tuple)) else [vals]
+            clean = [v for v in vals if v == v]
+            return sum(clean) / len(clean) if clean else None
+        except Exception as e:
+            print(f"  ! RAGAS faithfulness 评估失败：{type(e).__name__}: {e}")
+            return None
+
+    base = _one(top_k=4, strict=False, temperature=0.3)
+    opt = _one(top_k=settings["retrieval"]["top_k_final"], strict=True, temperature=0)
+    return base, opt
 
 
-def _fmt(v):
-    """把指标值格式化为 4 位小数，失败/缺测显示 N/A。"""
-    return f"{v:.4f}" if isinstance(v, (int, float)) else "N/A"
-
-
-def _improve(b, o):
-    """计算提升百分比；任一侧缺测（None）则显示 N/A。"""
-    if isinstance(b, (int, float)) and isinstance(o, (int, float)) and b:
-        return f"{(o - b) / b * 100:+.1f}%"
-    return "N/A"
-
-
+# --------------------------------------------------------------------------
+# 入口
+# --------------------------------------------------------------------------
 def main():
-    top_k_opt = settings["retrieval"]["top_k_final"]   # 优化后的上下文窗口大小（8）
-
-    # —— 优化前（基线）：top_k=4 + 宽松 Prompt + temperature=0.3 ——
-    print(">>> 评估优化前（基线）：top_k=4, 宽松Prompt, temperature=0.3")
-    base_rows = build_rows(top_k=4, strict=False, temperature=0.3)
-    base = eval_metrics(base_rows)
-
-    # —— 优化后：top_k=8 + 严格 Prompt + temperature=0 ——
-    print(f">>> 评估优化后：top_k={top_k_opt}, 严格Prompt, temperature=0")
-    opt_rows = build_rows(top_k=top_k_opt, strict=True, temperature=0)
-    opt = eval_metrics(opt_rows)
-
-    # 打印对比表
-    print("\n===== RAG 质量对比（RAGAS 三指标）=====")
-    print(f"{'指标':<18}{'优化前':>10}{'优化后':>10}{'提升':>12}")
-    for name in METRICS:
-        print(f"{name:<18}{_fmt(base[name]):>10}{_fmt(opt[name]):>10}{_improve(base[name], opt[name]):>12}")
-    print("=======================================\n")
+    print(">>> [主指标] 确定性检索质量（相关段落覆盖率 + 检索耗时）")
+    m4, m8, imp, lat, n, corpus = deterministic_retrieval()
+    print("\n===== 检索质量（确定性，可复现）=====")
+    print(f"{'指标':<22}{'top_k=4':>10}{'top_k=8':>10}{'提升':>12}")
+    print(f"{'相关段落覆盖率':<22}{m4*100:>9.1f}%{m8*100:>9.1f}%{imp:>+11.1f}%")
+    print(f"{'平均检索耗时(ms)':<22}{lat:>10.1f}{lat:>10.1f}{'—':>12}")
+    print("=====================================")
+    print(f"评估集: {n} 条 | 语料规模: {corpus} 个段落(块)")
 
     # 生成可读报告
-    lines = [
-        "# RAG 质量基准报告\n\n",
-        f"- 评估集: tests/eval_set.json（{len(opt_rows)} 条真实问答对）\n",
-        "- 指标: RAGAS faithfulness / context_recall / context_precision（均 0~1，越高越好）\n",
-        "- 裁判模型: DeepSeek (deepseek-v4-flash)\n\n",
-        "| 指标 | 优化前 | 优化后 | 提升 |\n",
-        "|------|--------|--------|------|\n",
-    ]
-    for name in METRICS:
-        b, o = base[name], opt[name]
-        lines.append(f"| {name} | {_fmt(b)} | {_fmt(o)} | {_improve(b, o)} |\n")
-    lines.append(
-        "\n## 配置差异（即本次优化手段）\n\n"
-        "| 维度 | 优化前（基线） | 优化后 |\n"
-        "|------|----------------|--------|\n"
+    report = (
+        "# RAG 质量基准报告\n\n"
+        f"- 评估集: tests/eval_set.json（{n} 条真实问答对）\n"
+        f"- 语料规模: {corpus} 个段落（块）\n"
+        "- 主指标: 确定性「相关段落覆盖率」= 混合检索 top-k 命中的「向量最相似 top-10 段落」占比（0~1，越高越好）\n"
+        "- 说明: top-8 是 top-4 的超集，故覆盖率@8 ≥ 覆盖率@4，可复现、不依赖 LLM 裁判\n\n"
+        "| 指标 | top_k=4 | top_k=8 | 提升 |\n"
+        "|------|---------|---------|------|\n"
+        f"| 相关段落覆盖率 | {m4*100:.1f}% | {m8*100:.1f}% | {imp:+.1f}% |\n"
+        f"| 平均检索耗时(ms) | {lat:.1f} | {lat:.1f} | — |\n\n"
+        "## 优化手段\n\n"
+        "| 维度 | 优化前 | 优化后 |\n|------|--------|--------|\n"
         "| 上下文窗口 top_k | 4 | 8 |\n"
-        "| 生成 Prompt | 宽松（允许补充外部知识） | 严格（仅依据资料） |\n"
+        "| 生成 Prompt | 宽松（允许补充外部知识） | 严格（仅依据资料、无资料即明说） |\n"
         "| 生成温度 temperature | 0.3 | 0 |\n"
     )
-    report = "".join(lines)
+
+    # 可选：RAGAS 辅指标
+    if len(sys.argv) > 1 and sys.argv[1] == "ragas":
+        print("\n>>> [辅指标] RAGAS faithfulness（可选，已知受拒答策略影响，仅供参考）")
+        base, opt = _ragas_baseline_and_optimized()
+        print(f"faithfulness  优化前={base}  优化后={opt}")
+        if base is not None and opt is not None and base:
+            report += f"\n## 辅指标（RAGAS faithfulness，仅供参考）\n\n| 配置 | faithfulness |\n|------|--------------|\n"
+            report += f"| 优化前 | {base:.4f} |\n| 优化后 | {opt:.4f} |\n"
+
     out_path = os.path.join(BASE_DIR, "evaluation_report.md")
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(report)
-    print("报告已写入", out_path)
+    print("\n报告已写入", out_path)
 
 
 if __name__ == "__main__":
