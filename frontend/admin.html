@@ -4,127 +4,248 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
   <title>后台 · 检测与上传</title>
 
   <style>
-    /* ============ 设计令牌：与聊天页保持一致，改一处全局生效 ============ */
+    /* ============ 设计令牌：浅色主题默认值（与聊天页一致） ============ */
     :root {
-      --accent: #0f766e;          /* 主色：青绿 */
-      --accent-strong: #115e59;   /* 主色加深：hover 态 */
-      --accent-soft: #e6f4f1;     /* 主色浅版：成功背景 */
-      --bg: #f7f8fa;              /* 页面背景 */
-      --surface: #ffffff;         /* 卡片背景 */
-      --ink: #1f2937;             /* 主文字 */
-      --text-dim: #6b7280;        /* 次要文字 */
-      --border: #e5e7eb;          /* 边框 */
-      --ok: #15803d;              /* 正常（绿） */
-      --ok-soft: #dcfce7;         /* 正常浅底 */
-      --bad: #b91c1c;             /* 异常（红） */
-      --bad-soft: #fee2e2;        /* 异常浅底 */
-      --radius: 16px;
-      --radius-sm: 10px;
+      --accent: #0f766e;
+      --accent-strong: #115e59;
+      --accent-2: #0ea5e9;
+      --accent-soft: #e6f4f1;
+      --bg-1: #eef4f5;
+      --bg-2: #f6f9fa;
+      --surface: rgba(255, 255, 255, .72);
+      --surface-solid: #ffffff;
+      --ink: #0e2a2c;
+      --text-dim: #5d6f71;
+      --border: rgba(15, 118, 110, .14);
+      --border-soft: rgba(15, 118, 110, .08);
+      --ok: #15803d;
+      --ok-soft: #dcfce7;
+      --bad: #b91c1c;
+      --bad-soft: #fee2e2;
+      --shadow-sm: 0 2px 10px -4px rgba(15, 118, 110, .25);
+      --shadow: 0 18px 44px -22px rgba(15, 118, 110, .4);
+      --radius: 18px;
+      --radius-sm: 12px;
       --ease: cubic-bezier(0.16, 1, 0.3, 1);
     }
+    /* ============ 深色主题令牌 ============ */
+    :root[data-theme="dark"] {
+      --accent: #2dd4bf;
+      --accent-strong: #14b8a6;
+      --accent-2: #38bdf8;
+      --accent-soft: rgba(45, 212, 191, .14);
+      --bg-1: #06161a;
+      --bg-2: #0a2024;
+      --surface: rgba(17, 34, 37, .66);
+      --surface-solid: #0f2124;
+      --ink: #e7f5f2;
+      --text-dim: #8aa4a1;
+      --border: rgba(45, 212, 191, .18);
+      --border-soft: rgba(45, 212, 191, .1);
+      --ok: #4ade80;
+      --ok-soft: rgba(74, 222, 128, .16);
+      --bad: #f87171;
+      --bad-soft: rgba(248, 113, 113, .16);
+      --shadow-sm: 0 2px 12px -4px rgba(0, 0, 0, .6);
+      --shadow: 0 22px 50px -24px rgba(0, 0, 0, .75);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root[data-theme="system"] {
+        --accent: #2dd4bf;
+        --accent-strong: #14b8a6;
+        --accent-2: #38bdf8;
+        --accent-soft: rgba(45, 212, 191, .14);
+        --bg-1: #06161a;
+        --bg-2: #0a2024;
+        --surface: rgba(17, 34, 37, .66);
+        --surface-solid: #0f2124;
+        --ink: #e7f5f2;
+        --text-dim: #8aa4a1;
+        --border: rgba(45, 212, 191, .18);
+        --border-soft: rgba(45, 212, 191, .1);
+        --ok: #4ade80;
+        --ok-soft: rgba(74, 222, 128, .16);
+        --bad: #f87171;
+        --bad-soft: rgba(248, 113, 113, .16);
+        --shadow-sm: 0 2px 12px -4px rgba(0, 0, 0, .6);
+        --shadow: 0 22px 50px -24px rgba(0, 0, 0, .75);
+      }
+    }
 
-    * { margin:0; padding:0; box-sizing: border-box; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
-      background: var(--bg);
+      font-family: "Segoe UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+      background: linear-gradient(160deg, var(--bg-1), var(--bg-2));
       color: var(--ink);
       min-height: 100dvh;
       line-height: 1.6;
+      overflow-x: hidden;
+      transition: background-color .4s var(--ease), color .4s var(--ease);
+    }
+    /* 极光背景（与聊天页同源） */
+    body::before {
+      content: "";
+      position: fixed; inset: -25%; z-index: -1; pointer-events: none;
+      background:
+        radial-gradient(38% 32% at 18% 18%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 62%),
+        radial-gradient(34% 30% at 84% 12%, color-mix(in srgb, var(--accent-2) 18%, transparent), transparent 62%),
+        radial-gradient(42% 38% at 72% 88%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%);
+      filter: blur(24px);
+      animation: aurora 20s ease-in-out infinite alternate;
+    }
+    @keyframes aurora {
+      from { transform: translate3d(0, 0, 0) scale(1); }
+      to   { transform: translate3d(-3%, 2%, 0) scale(1.08); }
     }
 
-    /* ============ 顶部 ============ */
+    /* ============ 顶部（玻璃 + 品牌渐变） ============ */
     header {
+      position: relative;
       background: linear-gradient(135deg, #0f766e, #0d9488);
       color: #fff;
-      padding: 20px 24px;
+      padding: 26px 24px;
+      border-bottom: 1px solid var(--border-soft);
+      overflow: hidden;
     }
-    header h1 { font-size: 19px; letter-spacing: .3px; }
-    header p  { font-size: 13px; opacity: .9; margin-top: 4px; }
+    header::after {
+      content: ""; position: absolute; inset: 0 0 auto 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .5), transparent);
+    }
+    header h1 {
+      font-size: 20px; letter-spacing: .3px; font-weight: 700;
+      background: linear-gradient(90deg, #ffffff, #d9f5ef);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    header p  { font-size: 13px; opacity: .92; margin-top: 4px; }
+
+    /* 主题切换按钮（左上角圆形玻璃） */
+    .theme-toggle {
+      position: absolute; top: 14px; left: 14px;
+      width: 38px; height: 38px; border-radius: 50%;
+      display: grid; place-items: center;
+      background: rgba(255, 255, 255, .16);
+      border: 1px solid rgba(255, 255, 255, .35);
+      color: #fff; cursor: pointer; backdrop-filter: blur(6px);
+      transition: background .2s var(--ease), transform .25s var(--ease);
+    }
+    .theme-toggle:hover { background: rgba(255, 255, 255, .3); transform: rotate(15deg); }
+    .theme-toggle svg { width: 18px; height: 18px; }
+
     /* 返回聊天页的链接 */
     .back {
       display: inline-block; margin-top: 8px; font-size: 12px;
-      color: rgba(255,255,255,.9); text-decoration: none;
-      border-bottom: 1px dashed rgba(255,255,255,.5);
+      color: rgba(255, 255, 255, .9); text-decoration: none;
+      border-bottom: 1px dashed rgba(255, 255, 255, .55);
+      transition: color .18s var(--ease), border-color .18s var(--ease);
     }
-    .back:hover { color:#fff; border-bottom-color:#fff; }
+    .back:hover { color: #fff; border-bottom-color: #fff; }
 
     /* ============ 主体容器 ============ */
     main {
       max-width: 820px; margin: 0 auto; width: 100%;
-      padding: 20px 16px calc(28px + env(safe-area-inset-bottom));
+      padding: 22px 16px calc(30px + env(safe-area-inset-bottom));
       display: flex; flex-direction: column; gap: 16px;
+      position: relative; z-index: 1;
     }
 
-    /* ============ 单张卡片 ============ */
+    /* ============ 单张卡片（玻璃拟态 + 柔和阴影 + 错落入场） ============ */
     .card {
       background: var(--surface);
+      backdrop-filter: blur(20px);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 18px;
-      animation: card-in .28s var(--ease) both;
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      animation: card-in .34s var(--ease) both;
     }
-    @keyframes card-in { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform:none; } }
-    .card h2 { font-size: 15px; margin-bottom: 4px; }
-    .card .hint { font-size: 12px; color: var(--text-dim); margin-bottom: 14px; }
+    .card:nth-child(2) { animation-delay: .05s; }  /* 第 2 张稍晚入场，形成错落 */
+    .card:nth-child(3) { animation-delay: .1s; }
+    .card:nth-child(4) { animation-delay: .15s; }
+    @keyframes card-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
-    /* ============ 通用按钮 ============ */
+    /* 卡片标题：前面带一个主题色小圆点（① 这类序号保留在文字里） */
+    .card h2 { font-size: 15.5px; margin-bottom: 4px; display: flex; align-items: center; gap: 7px; }
+    .card h2::before {
+      content: ""; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    .card .hint { font-size: 12.5px; color: var(--text-dim); margin-bottom: 14px; }
+
+    /* ============ 通用按钮（渐变主色 + 玻璃幽灵） ============ */
     .btn {
       border: none; border-radius: var(--radius-sm);
-      background: var(--accent); color: #fff;
-      font-size: 14px; padding: 10px 18px; cursor: pointer;
-      transition: background .15s var(--ease), transform .1s var(--ease);
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #fff; font-size: 14px; padding: 11px 20px; cursor: pointer;
+      box-shadow: var(--shadow-sm);
+      transition: filter .2s var(--ease), box-shadow .2s var(--ease), transform .1s var(--ease);
     }
-    .btn:hover:not(:disabled) { background: var(--accent-strong); }
+    .btn:hover:not(:disabled) { filter: brightness(1.06); box-shadow: var(--shadow); }
     .btn:active:not(:disabled) { transform: scale(.97); }
     .btn:disabled { opacity: .5; cursor: not-allowed; }
-    .btn.ghost { background: var(--surface); color: var(--accent); border: 1px solid var(--accent); }
+    .btn.ghost {
+      background: var(--surface); color: var(--accent);
+      border: 1px solid var(--accent); box-shadow: none; backdrop-filter: blur(10px);
+    }
+    .btn.ghost:hover:not(:disabled) { background: var(--accent-soft); box-shadow: var(--shadow-sm); }
 
     /* ============ 状态检测行 ============ */
     .status-row {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 14px;
+      padding: 11px 4px; border-bottom: 1px solid var(--border-soft); font-size: 14px;
+      transition: background .15s var(--ease);
     }
     .status-row:last-child { border-bottom: none; }
+    .status-row:hover { background: var(--accent-soft); border-radius: 8px; } /* 行 hover 轻微高亮 */
     .status-row .label { color: var(--ink); }
-    /* 状态点：绿=正常，红=异常 */
-    .dot { font-size: 13px; font-weight: 600; padding: 2px 10px; border-radius: 999px; }
+    /* 状态点：绿=正常，红=异常，灰=中性 */
+    .dot { font-size: 12.5px; font-weight: 600; padding: 3px 11px; border-radius: 999px; }
     .dot.ok  { color: var(--ok);  background: var(--ok-soft); }
     .dot.bad { color: var(--bad); background: var(--bad-soft); }
-    .dot.mut { color: var(--text-dim); background: #f1f3f5; }
+    .dot.mut { color: var(--text-dim); background: rgba(120, 130, 135, .14); }
 
     /* 资料文件清单 */
-    .file-list { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .file-list { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 7px; }
     .file-tag {
-      font-size: 12px; background: #f1f3f5; border: 1px solid var(--border);
-      border-radius: 8px; padding: 3px 9px; color: var(--ink);
+      font-size: 12px; background: var(--surface-solid); border: 1px solid var(--border);
+      border-radius: 8px; padding: 4px 10px; color: var(--ink);
+      transition: transform .15s var(--ease), border-color .15s var(--ease);
     }
+    .file-tag:hover { transform: translateY(-1px); border-color: var(--accent); }
 
-    /* ============ 上传区 ============ */
+    /* ============ 上传区（玻璃 + 可拖拽高亮） ============ */
     .upload-zone {
       border: 1.5px dashed var(--border); border-radius: var(--radius-sm);
-      padding: 18px; text-align: center; color: var(--text-dim); font-size: 13px;
-      margin-bottom: 12px;
+      padding: 22px; text-align: center; color: var(--text-dim); font-size: 13px;
+      margin-bottom: 14px; background: var(--surface); backdrop-filter: blur(12px);
+      transition: border-color .2s var(--ease), background .2s var(--ease), transform .2s var(--ease);
     }
-    .upload-zone input { margin-top: 8px; }
+    .upload-zone.drag {            /* 拖拽悬停时高亮 */
+      border-color: var(--accent); color: var(--accent);
+      background: var(--accent-soft); transform: scale(1.01);
+    }
+    .upload-zone input { margin-top: 10px; color: var(--ink); }
 
     /* ============ 结果提示条 ============ */
     .result {
-      margin-top: 12px; font-size: 13px; padding: 10px 12px;
+      margin-top: 14px; font-size: 13px; padding: 11px 14px;
       border-radius: var(--radius-sm); display: none;
+      border: 1px solid transparent;
     }
-    .result.show { display: block; }
-    .result.ok  { background: var(--ok-soft);  color: var(--ok); }
-    .result.bad { background: var(--bad-soft); color: var(--bad); }
+    .result.show { display: block; animation: card-in .25s var(--ease) both; }
+    .result.ok  { background: var(--ok-soft);  color: var(--ok); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+    .result.bad { background: var(--bad-soft); color: var(--bad); border-color: color-mix(in srgb, var(--bad) 30%, transparent); }
 
     /* ============ 设置（API Key） ============ */
     .settings { display: flex; gap: 10px; flex-wrap: wrap; }
     .settings input {
-      flex: 1; min-width: 200px; padding: 9px 12px;
+      flex: 1; min-width: 200px; padding: 10px 12px;
       border: 1px solid var(--border); border-radius: 8px; font-size: 13px;
+      background: var(--surface-solid); color: var(--ink);
     }
     .settings input:focus { border-color: var(--accent); outline: none; }
 
@@ -138,6 +259,8 @@
 
 <body>
   <header>
+    <!-- 主题切换：浅色→深色→跟随系统 循环 -->
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题">🌗</button>
     <h1>后台 · 检测与上传</h1>
     <p>检测系统状态、上传资料、一键重新入库</p>
     <a class="back" href="/">← 返回聊天页</a>
@@ -166,7 +289,7 @@
     <section class="card">
       <h2>② 上传资料</h2>
       <p class="hint">支持 .txt / .md / .pdf，单文件 ≤ 20MB。上传后落到 data/raw，再点下方"重新入库"才会进向量库。</p>
-      <div class="upload-zone">
+      <div class="upload-zone" id="uploadZone">
         把资料拖进来，或
         <br>
         <input id="fileInput" type="file" multiple accept=".txt,.md,.pdf" aria-label="选择要上传的资料" />
@@ -186,12 +309,55 @@
   </main>
 
   <script>
+    // ============ 0. 主题：light / dark / system 三态切换 ============
+    const themeToggle = document.getElementById("themeToggle");
+    const THEME_KEY = "theme";
+    const THEME_ICONS = {
+      light: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+      dark:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
+      system:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>'
+    };
+    const THEME_LABEL = { light: "浅色", dark: "深色", system: "跟随系统" };
+    function applyTheme() {
+      const t = localStorage.getItem(THEME_KEY) || "system";
+      document.documentElement.setAttribute("data-theme", t);
+      themeToggle.innerHTML = THEME_ICONS[t];
+      themeToggle.setAttribute("aria-label", "当前主题：" + THEME_LABEL[t]);
+    }
+    function cycleTheme() {
+      const order = ["light", "dark", "system"];
+      const cur = localStorage.getItem(THEME_KEY) || "system";
+      const next = order[(order.indexOf(cur) + 1) % 3];
+      localStorage.setItem(THEME_KEY, next);
+      applyTheme();
+    }
+    themeToggle.addEventListener("click", cycleTheme);
+    applyTheme();
+    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+      if ((localStorage.getItem(THEME_KEY) || "system") === "system") applyTheme();
+    });
+
+    // ============ 0.5 磁吸按钮：光标靠近时轻微跟随 ============
+    function bindMagnetic(el, strength = 0.25) {
+      if (!el) return;
+      el.addEventListener("mousemove", (e) => {
+        const r = el.getBoundingClientRect();
+        const x = (e.clientX - (r.left + r.width / 2)) * strength;
+        const y = (e.clientY - (r.top + r.height / 2)) * strength;
+        el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+      });
+      el.addEventListener("mouseleave", () => { el.style.transform = ""; });
+    }
+    [document.getElementById("btnUpload"), document.getElementById("btnIngestReset"), document.getElementById("btnIngestAppend")]
+      .forEach(b => bindMagnetic(b, 0.2));
+
     // ============ 1. 取页面元素 ============
     const apiBaseInput = document.getElementById("apiBase");
     const apiKeyInput  = document.getElementById("apiKey");
     const btnStatus    = document.getElementById("btnStatus");
     const statusBox    = document.getElementById("statusBox");
     const fileInput    = document.getElementById("fileInput");
+    const uploadZone   = document.getElementById("uploadZone");
     const btnUpload    = document.getElementById("btnUpload");
     const uploadResult = document.getElementById("uploadResult");
     const btnIngestReset   = document.getElementById("btnIngestReset");
@@ -271,10 +437,24 @@
       return '<div class="status-row"><span class="label">' + esc(label) + '</span>' + valueHtml + '</div>';
     }
 
-    // ============ 9. ② 上传资料 ============
+    // ============ 9. ② 上传资料（含拖拽支持） ============
+    // 拖拽悬停高亮
+    ["dragenter", "dragover"].forEach(ev => uploadZone.addEventListener(ev, (e) => {
+      e.preventDefault(); uploadZone.classList.add("drag");
+    }));
+    ["dragleave", "drop"].forEach(ev => uploadZone.addEventListener(ev, (e) => {
+      e.preventDefault(); uploadZone.classList.remove("drag");
+    }));
+    // 拖放文件：写入 file input，便于复用“上传选中文件”逻辑
+    uploadZone.addEventListener("drop", (e) => {
+      const dt = new DataTransfer();
+      for (const f of e.dataTransfer.files) dt.items.add(f);
+      fileInput.files = dt.files;
+    });
+
     btnUpload.addEventListener("click", async () => {
       const files = fileInput.files;
-      if (!files.length) { showResult(uploadResult, false, "请先选择文件"); return; }
+      if (!files.length) { showResult(uploadResult, false, "请先选择文件（或拖拽到上传区）"); return; }
       btnUpload.disabled = true;
       // 用 FormData 组织多文件，字段名 files 对应后端 list[UploadFile]
       const fd = new FormData();

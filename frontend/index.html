@@ -10,73 +10,167 @@
   <!-- viewport-fit=cover：适配刘海屏，安全区不被遮挡 -->
   <meta name="description" content="许成合的个人 AI 助手，基于 RAG 检索增强生成，可回答关于其经历、技能与项目的问题" />
   <!-- description：页面描述，利于 SEO 与分享卡片 -->
-  <meta name="color-scheme" content="light" />
-  <!-- 声明只支持浅色主题，避免系统深色模式把页面弄乱 -->
+  <meta name="color-scheme" content="light dark" />
+  <!-- 声明同时支持浅色/深色，浏览器按 data-theme 渲染 -->
   <title>许成合 · 个人 AI 助手</title>
   <!-- 浏览器标签页标题 -->
 
   <style>
-    /* ============ 设计令牌（Design Tokens）：集中管理颜色/圆角，改一处全局生效 ============ */
+    /* ============ 设计令牌（Design Tokens）：浅色主题默认值 ============ */
     :root {
-      --accent: #0f766e;          /* 主色：青绿 teal-700，克制不刺眼，对比度达标 */
-      --accent-strong: #115e59;   /* 主色加深：用于 hover 态 */
-      --accent-soft: #e6f4f1;     /* 主色浅版：AI 气泡背景 */
-      --bg: #f7f8fa;              /* 页面背景：浅灰 */
-      --surface: #ffffff;         /* 卡片/输入区背景：白 */
-      --ink: #1f2937;             /* 主文字：深灰近黑（与白底对比 > 7:1，超 AA） */
-      --text-dim: #6b7280;        /* 次要文字：中灰 */
-      --border: #e5e7eb;          /* 边框/分隔线：浅灰 */
-      --radius: 16px;             /* 统一大圆角 */
-      --radius-sm: 10px;          /* 小圆角 */
-      --ease: cubic-bezier(0.16, 1, 0.3, 1); /* 平滑减速缓动，用于入场动画 */
+      --accent: #0f766e;            /* 主色：青绿 teal，克制不刺眼 */
+      --accent-strong: #115e59;     /* 主色加深：hover 态 */
+      --accent-2: #0ea5e9;         /* 辅助渐变色：天蓝，用于极光 */
+      --accent-soft: #e6f4f1;      /* 主色浅版：AI 气泡/成功背景 */
+      --bg-1: #eef4f5;             /* 背景渐变起色 */
+      --bg-2: #f6f9fa;             /* 背景渐变止色 */
+      --surface: rgba(255, 255, 255, .72);  /* 玻璃面：半透明白，叠在极光上有磨砂感 */
+      --surface-solid: #ffffff;      /* 实心面：输入框/设置区 */
+      --ink: #0e2a2c;              /* 主文字：深青墨，比纯黑更高级 */
+      --text-dim: #5d6f71;         /* 次要文字：中灰绿 */
+      --border: rgba(15, 118, 110, .14);    /* 主题色描边，比灰边更统一 */
+      --border-soft: rgba(15, 118, 110, .08);
+      --shadow-sm: 0 2px 10px -4px rgba(15, 118, 110, .25);  /* 轻阴影 */
+      --shadow: 0 18px 44px -22px rgba(15, 118, 110, .4);    /* 主阴影：柔和扩散 */
+      --radius: 18px;              /* 统一大圆角 */
+      --radius-sm: 12px;           /* 小圆角 */
+      --ease: cubic-bezier(0.16, 1, 0.3, 1); /* 平滑减速缓动，用于入场/交互 */
+    }
+
+    /* ============ 深色主题令牌（data-theme="dark" 时生效） ============ */
+    :root[data-theme="dark"] {
+      --accent: #2dd4bf;
+      --accent-strong: #14b8a6;
+      --accent-2: #38bdf8;
+      --accent-soft: rgba(45, 212, 191, .14);
+      --bg-1: #06161a;
+      --bg-2: #0a2024;
+      --surface: rgba(17, 34, 37, .66);
+      --surface-solid: #0f2124;
+      --ink: #e7f5f2;
+      --text-dim: #8aa4a1;
+      --border: rgba(45, 212, 191, .18);
+      --border-soft: rgba(45, 212, 191, .1);
+      --shadow-sm: 0 2px 12px -4px rgba(0, 0, 0, .6);
+      --shadow: 0 22px 50px -24px rgba(0, 0, 0, .75);
+    }
+    /* 跟随系统且系统为深色时，套用同一套深色令牌（仅当 data-theme="system"） */
+    @media (prefers-color-scheme: dark) {
+      :root[data-theme="system"] {
+        --accent: #2dd4bf;
+        --accent-strong: #14b8a6;
+        --accent-2: #38bdf8;
+        --accent-soft: rgba(45, 212, 191, .14);
+        --bg-1: #06161a;
+        --bg-2: #0a2024;
+        --surface: rgba(17, 34, 37, .66);
+        --surface-solid: #0f2124;
+        --ink: #e7f5f2;
+        --text-dim: #8aa4a1;
+        --border: rgba(45, 212, 191, .18);
+        --border-soft: rgba(45, 212, 191, .1);
+        --shadow-sm: 0 2px 12px -4px rgba(0, 0, 0, .6);
+        --shadow: 0 22px 50px -24px rgba(0, 0, 0, .75);
+      }
     }
 
     /* 清零默认边距，统一盒模型（宽高包含 padding，布局更好算） */
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    /* 页面整体：浅色底、纵向弹性布局、占满视口高度（dvh 适配移动端地址栏） */
+    /* 页面整体：浅色/深色渐变底、纵向弹性布局、占满视口高度（dvh 适配移动端） */
     body {
-      font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; /* 优先系统中文字体 */
-      background: var(--bg);
+      font-family: "Segoe UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+      background: linear-gradient(160deg, var(--bg-1), var(--bg-2));
       color: var(--ink);
       min-height: 100dvh;          /* 用 dvh 而非 vh，移动端更稳 */
       display: flex;               /* 弹性布局 */
       flex-direction: column;      /* 子元素从上到下排列 */
       -webkit-font-smoothing: antialiased; /* 字体抗锯齿，更清晰 */
+      overflow-x: hidden;          /* 极光溢出时不出现横向滚动条 */
+      transition: background-color .4s var(--ease), color .4s var(--ease);
+      /* 主题切换时背景/文字颜色平滑过渡，不闪白不闪黑 */
     }
 
-    /* ============ 顶部：个人介绍头部 ============ */
+    /* 极光背景：固定层，放在内容之下；用 color-mix 让光晕颜色跟随主题主色 */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -25%;                /* 比视口大一圈，动画平移时不露边 */
+      z-index: -1;                /* 永远在内容下层 */
+      pointer-events: none;       /* 不挡点击 */
+      background:
+        radial-gradient(38% 32% at 18% 18%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 62%),
+        radial-gradient(34% 30% at 84% 12%, color-mix(in srgb, var(--accent-2) 18%, transparent), transparent 62%),
+        radial-gradient(42% 38% at 72% 88%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%);
+      filter: blur(24px);         /* 柔化光晕边缘 */
+      animation: aurora 20s ease-in-out infinite alternate; /* 缓慢漂移 */
+    }
+    @keyframes aurora {
+      from { transform: translate3d(0, 0, 0) scale(1); }
+      to   { transform: translate3d(-3%, 2%, 0) scale(1.08); }
+    }
+
+    /* ============ 顶部：个人介绍头部（玻璃质感 + 品牌青绿渐变） ============ */
     header {
-      position: relative;          /* 为内部“清空”按钮绝对定位提供参照 */
-      background: linear-gradient(135deg, #0f766e, #0d9488); /* 青绿渐变，沉稳不俗套 */
+      position: relative;          /* 为内部按钮绝对定位提供参照 */
+      background: linear-gradient(135deg, #0f766e, #0d9488); /* 品牌渐变，深浅主题保持一致 */
       color: #fff;                 /* 白字 */
-      padding: 22px 24px;          /* 内边距 */
+      padding: 30px 24px 26px;    /* 更充裕的内边距，显高级 */
       text-align: center;          /* 文字居中 */
+      border-bottom: 1px solid var(--border-soft);
+      overflow: hidden;
     }
-    header h1 { font-size: 20px; margin-bottom: 4px; letter-spacing: .3px; }
-    header p  { font-size: 13px; opacity: .9; }
+    /* 顶部高光：一条极淡的亮线，让头部更通透 */
+    header::after {
+      content: "";
+      position: absolute; inset: 0 0 auto 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .5), transparent);
+    }
+    header h1 {
+      font-size: 22px; margin-bottom: 6px; letter-spacing: .4px; font-weight: 700;
+      /* 标题用白→淡青的渐变文字，比纯白更有层次 */
+      background: linear-gradient(90deg, #ffffff, #d9f5ef);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    header p  { font-size: 13px; opacity: .92; }
 
-    /* 头部右上角的“清空对话”按钮（幽灵风格，不抢眼） */
+    /* 主题切换按钮：左上角，圆形玻璃，hover 轻微旋转 */
+    .theme-toggle {
+      position: absolute; top: 14px; left: 14px;
+      width: 38px; height: 38px; border-radius: 50%;
+      display: grid; place-items: center; /* 图标居中 */
+      background: rgba(255, 255, 255, .16);
+      border: 1px solid rgba(255, 255, 255, .35);
+      color: #fff; cursor: pointer; backdrop-filter: blur(6px);
+      transition: background .2s var(--ease), transform .25s var(--ease);
+    }
+    .theme-toggle:hover { background: rgba(255, 255, 255, .3); transform: rotate(15deg); }
+    .theme-toggle svg { width: 18px; height: 18px; }
+
+    /* 头部右上角的“清空对话”按钮（玻璃幽灵风格，不抢眼） */
     .clear-btn {
       position: absolute;          /* 绝对定位到右上角 */
-      top: 12px; right: 14px;
-      background: rgba(255, 255, 255, .15); /* 半透明白底 */
+      top: 14px; right: 14px;
+      background: rgba(255, 255, 255, .16); /* 半透明白底 */
       color: #fff;                 /* 白字 */
       border: 1px solid rgba(255, 255, 255, .35); /* 半透明描边 */
       border-radius: 999px;        /* 胶囊形 */
-      padding: 4px 12px;           /* 内边距 */
+      padding: 5px 13px;           /* 内边距 */
       font-size: 12px;             /* 小字 */
       cursor: pointer;             /* 手型 */
-      transition: background .15s var(--ease); /* 背景过渡，触觉反馈 */
+      backdrop-filter: blur(6px);
+      transition: background .18s var(--ease), transform .18s var(--ease); /* 背景/位移过渡 */
     }
-    .clear-btn:hover { background: rgba(255, 255, 255, .28); } /* hover 更亮 */
+    .clear-btn:hover { background: rgba(255, 255, 255, .3); }
+    .clear-btn:active { transform: scale(.94); } /* 按下轻微回缩 */
 
     /* 头部“后台管理”入口链接（指向 /admin 后台页） */
     .admin-link {
-      display: inline-block; margin-top: 6px;          /* 与副标题留点间距 */
-      font-size: 12px; color: rgba(255, 255, 255, .85);  /* 半透明白字 */
+      display: inline-block; margin-top: 8px;          /* 与副标题留点间距 */
+      font-size: 12px; color: rgba(255, 255, 255, .88);  /* 半透明白字 */
       text-decoration: none;                             /* 去掉下划线 */
-      border-bottom: 1px dashed rgba(255, 255, 255, .5); /* 虚线下划，提示可点 */
+      border-bottom: 1px dashed rgba(255, 255, 255, .55); /* 虚线下划，提示可点 */
+      transition: color .18s var(--ease), border-color .18s var(--ease);
     }
     .admin-link:hover { color: #fff; border-bottom-color: #fff; } /* hover 变实白 */
 
@@ -84,48 +178,56 @@
     #chat {
       flex: 1;                     /* 占据头部与输入区之外的全部高度 */
       overflow-y: auto;            /* 内容超出时可滚动 */
-      padding: 20px;               /* 内边距 */
+      padding: 22px 20px;         /* 内边距 */
       display: flex;               /* 弹性布局 */
       flex-direction: column;      /* 消息自上而下排 */
-      gap: 14px;                   /* 消息间距 */
-      max-width: 820px;            /* 限制最大宽度，阅读更舒服 */
-      width: 100%;                 /* 宽度撑满（受 max-width 约束） */
-      margin: 0 auto;              /* 水平居中 */
+      gap: 14px;                  /* 消息间距 */
+      max-width: 820px;           /* 限制最大宽度，阅读更舒服 */
+      width: 100%;                /* 宽度撑满（受 max-width 约束） */
+      margin: 0 auto;             /* 水平居中 */
       scroll-behavior: smooth;     /* 滚动平滑（尊重 reduced-motion 时会关闭） */
+      position: relative; z-index: 1; /* 确保在极光层之上 */
     }
+    /* 自定义滚动条（webkit）：细、圆角、hover 显主色 */
+    #chat::-webkit-scrollbar { width: 8px; }
+    #chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+    #chat::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
     /* 单条消息气泡的通用样式 */
     .msg {
       max-width: 85%;              /* 气泡最宽占 85%，留出层次 */
-      padding: 12px 16px;          /* 内边距 */
+      padding: 13px 17px;          /* 内边距 */
       border-radius: var(--radius);/* 圆角 */
-      line-height: 1.7;            /* 行高，长文易读 */
+      line-height: 1.75;           /* 行高，长文易读 */
       font-size: 15px;             /* 字号 */
       white-space: pre-wrap;       /* 保留换行与空格 */
       word-break: break-word;      /* 长单词/URL 自动换行，不撑破 */
-      animation: msg-in .28s var(--ease) both; /* 入场动画：淡入+上移 */
+      box-shadow: var(--shadow-sm);/* 轻阴影，让气泡浮起来 */
+      animation: msg-in .32s var(--ease) both; /* 入场动画：淡入+上移 */
     }
     /* 入场动画关键帧（只动 transform/opacity，GPU 友好） */
     @keyframes msg-in {
-      from { opacity: 0; transform: translateY(10px) scale(.98); }
+      from { opacity: 0; transform: translateY(12px) scale(.98); }
       to   { opacity: 1; transform: none; }
     }
 
-    /* 用户消息：靠右、主色实底、白字 */
+    /* 用户消息：靠右、主色渐变实底、白字 */
     .msg.user {
       align-self: flex-end;            /* 靠右 */
-      background: var(--accent);       /* 主色背景 */
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong)); /* 渐变让按钮更有质感 */
       color: #fff;                     /* 白字 */
-      border-bottom-right-radius: 4px; /* 右下角收窄，形成“尾巴”指向自己 */
+      border-bottom-right-radius: 5px; /* 右下角收窄，形成“尾巴”指向自己 */
+      box-shadow: var(--shadow);
     }
 
-    /* AI 消息：靠左、浅色底、深字 */
+    /* AI 消息：靠左、玻璃浅底、深字 */
     .msg.bot {
       align-self: flex-start;          /* 靠左 */
-      background: var(--accent-soft);  /* 浅青绿背景 */
+      background: var(--surface);       /* 玻璃面 */
+      backdrop-filter: blur(18px);      /* 磨砂玻璃 */
       color: var(--ink);               /* 深字 */
-      border: 1px solid var(--border); /* 细边框 */
-      border-bottom-left-radius: 4px;  /* 左下角收窄 */
+      border: 1px solid var(--border); /* 主题色细边框 */
+      border-bottom-left-radius: 5px;   /* 左下角收窄 */
     }
     .msg.bot strong { color: var(--accent); } /* AI 回答里的加粗用主色突出 */
 
@@ -136,16 +238,18 @@
       color: var(--text-dim);          /* 灰色 */
       max-width: 85%;                  /* 与气泡等宽 */
       padding-left: 4px;               /* 略缩进 */
-      animation: msg-in .28s var(--ease) both; /* 同样带入场动画 */
+      animation: msg-in .32s var(--ease) both; /* 同样带入场动画 */
     }
     .sources b { color: var(--ink); }  /* “来源：”标签加深 */
     .src-tag {
       display: inline-block;           /* 行内块，可设内边距 */
-      background: var(--surface);      /* 白底 */
-      border: 1px solid var(--border);  /* 边框 */
+      background: var(--surface);       /* 玻璃面 */
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border); /* 主题色边框 */
       border-radius: 8px;              /* 小圆角 */
-      padding: 2px 8px;                /* 内边距 */
-      margin: 3px 4px 0 0;             /* 标签间距 */
+      padding: 3px 9px;               /* 内边距 */
+      margin: 3px 4px 0 0;            /* 标签间距 */
+      color: var(--ink);
     }
 
     /* “思考中”打字指示：三个跳动的小圆点（比纯文字更生动） */
@@ -167,61 +271,84 @@
     #chips {
       display: flex; flex-wrap: wrap; gap: 8px;   /* 可换行的小标签行 */
       justify-content: center;                     /* 居中 */
-      padding: 0 20px 10px;                        /* 左右内边距、底部留白 */
+      padding: 0 20px 12px;                        /* 左右内边距、底部留白 */
       max-width: 820px; margin: 0 auto; width: 100%; /* 与主体同宽并居中 */
+      position: relative; z-index: 1;
     }
     .chip {
-      font-size: 12px; padding: 6px 12px;          /* 内边距 */
-      border: 1px solid var(--border);             /* 边框 */
+      font-size: 12.5px; padding: 8px 14px;       /* 内边距 */
+      border: 1px solid var(--border);             /* 主题色边框 */
       border-radius: 999px;                        /* 胶囊形 */
-      background: var(--surface);                  /* 白底 */
-      color: var(--text-dim);                      /* 灰字 */
+      background: var(--surface);                   /* 玻璃面 */
+      backdrop-filter: blur(12px);
+      color: var(--text-dim);                       /* 灰字 */
       cursor: pointer;                             /* 手型 */
-      transition: all .15s var(--ease);            /* 颜色/边框过渡 */
+      box-shadow: var(--shadow-sm);
+      transition: all .2s var(--ease);            /* 颜色/边框/位移过渡 */
     }
-    .chip:hover { border-color: var(--accent); color: var(--accent); } /* hover 变主色 */
+    .chip:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow); } /* hover 上浮+变主色 */
+    .chip:active { transform: translateY(0) scale(.97); }
 
     /* ============ 底部：输入区（用 <form> 包裹，回车天然可提交） ============ */
     #inputBar {
       display: flex; gap: 10px;                    /* 输入框与按钮横向排列 */
-      padding: 14px 20px;                          /* 内边距 */
-      background: var(--surface);                  /* 白底 */
-      border-top: 1px solid var(--border);         /* 顶部分隔线 */
-      max-width: 820px; margin: 0 auto; width: 100%; /* 与聊天区同宽并居中 */
-      padding-bottom: calc(14px + env(safe-area-inset-bottom)); /* 适配 iPhone 底部安全区 */
+      padding: 12px;                              /* 内边距（整体当成一个玻璃卡片） */
+      margin: 0 auto 16px;                        /* 居中 + 底部离屏边留白 */
+      max-width: 820px; width: calc(100% - 32px); /* 两侧各留 16px */
+      background: var(--surface);                   /* 玻璃面 */
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);             /* 主题色边框 */
+      border-radius: var(--radius);                 /* 大圆角，像悬浮胶囊 */
+      box-shadow: var(--shadow);                    /* 主阴影，浮起感 */
+      position: relative; z-index: 1;
     }
     #q {
-      flex: 1; padding: 12px 16px;                 /* 输入框占剩余宽度 */
-      border: 1px solid var(--border);             /* 边框 */
+      flex: 1; padding: 13px 16px;                /* 输入框占剩余宽度 */
+      border: 1px solid var(--border);             /* 主题色边框 */
       border-radius: var(--radius-sm);             /* 圆角 */
+      background: var(--surface-solid);              /* 实心面，输入区更聚焦 */
+      color: var(--ink);
       font-size: 15px;                             /* 字号 */
       outline: none;                               /* 先去掉默认轮廓，后面用 focus-visible 统一 */
     }
     #q:focus { border-color: var(--accent); }      /* 聚焦时边框变主色 */
     #send {
-      padding: 0 22px; border: none;               /* 去边框 */
+      padding: 0 24px; border: none;               /* 去边框 */
       border-radius: var(--radius-sm);             /* 圆角 */
-      background: var(--accent); color: #fff;      /* 主色底白字 */
-      font-size: 15px; cursor: pointer;            /* 字号、手型 */
-      transition: background .15s var(--ease), transform .1s var(--ease); /* 过渡 */
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong)); /* 主色渐变 */
+      color: #fff; font-size: 15px; cursor: pointer;  /* 字号、手型 */
+      box-shadow: var(--shadow-sm);
+      transition: filter .2s var(--ease), box-shadow .2s var(--ease), transform .12s var(--ease);
     }
-    #send:hover:not(:disabled) { background: var(--accent-strong); } /* hover 加深 */
-    #send:active:not(:disabled) { transform: scale(.97); }           /* 按下轻微回缩，触觉反馈 */
+    #send:hover:not(:disabled) { filter: brightness(1.06); box-shadow: var(--shadow); } /* hover 微亮 */
+    #send:active:not(:disabled) { transform: scale(.96); }           /* 按下轻微回缩，触觉反馈 */
     #send:disabled { opacity: .5; cursor: not-allowed; }             /* 禁用态变灰 */
 
-    /* ============ 设置区（可折叠） ============ */
+    /* ============ 设置区（可折叠，玻璃卡片） ============ */
     details {
-      max-width: 820px; margin: 0 auto; width: 100%; /* 与主体同宽居中 */
-      padding: 0 20px calc(14px + env(safe-area-inset-bottom)); /* 底部安全区 */
+      max-width: 820px; margin: 0 auto 12px; width: calc(100% - 32px); /* 与主体同宽居中 */
+      background: var(--surface);                   /* 玻璃面 */
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 4px 16px; box-shadow: var(--shadow-sm);
+      position: relative; z-index: 1;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom)); /* 适配 iPhone 底部安全区 */
     }
     summary {
-      cursor: pointer; font-size: 12px; color: var(--text-dim);
-      padding: 8px 0; user-select: none;            /* 不可选中，更像按钮 */
+      cursor: pointer; font-size: 13px; color: var(--text-dim);
+      padding: 12px 0; user-select: none;            /* 不可选中，更像按钮 */
+      display: flex; align-items: center; gap: 6px;
+    }
+    summary::before {
+      content: ""; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); /* 小圆点标 */
     }
     .settings { display: flex; gap: 10px; flex-wrap: wrap; padding-bottom: 10px; }
     .settings input {
-      flex: 1; min-width: 200px; padding: 8px 12px; /* 平分宽度，窄屏换行 */
+      flex: 1; min-width: 200px; padding: 10px 12px; /* 平分宽度，窄屏换行 */
       border: 1px solid var(--border); border-radius: 8px; font-size: 13px;
+      background: var(--surface-solid); color: var(--ink);
     }
     .settings input:focus { border-color: var(--accent); outline: none; }
 
@@ -230,18 +357,19 @@
 
     /* ============ 响应式：窄屏（手机）适配 ============ */
     @media (max-width: 640px) {
-      header { padding: 16px 14px; }
-      header h1 { font-size: 17px; }
+      header { padding: 24px 14px 22px; }
+      header h1 { font-size: 19px; }
       header p  { font-size: 12px; }
-      .clear-btn { top: 10px; right: 10px; padding: 3px 10px; }
-      #chat { padding: 14px; gap: 10px; }
+      .theme-toggle { top: 12px; left: 12px; width: 34px; height: 34px; }
+      .clear-btn { top: 12px; right: 12px; padding: 4px 11px; }
+      #chat { padding: 16px 14px; gap: 10px; }
       .msg { max-width: 92%; font-size: 14px; }     /* 手机上气泡更宽 */
       .sources { max-width: 92%; }
-      #chips { padding: 0 12px 8px; }
-      #inputBar { padding: 10px 12px; }
-      #q { font-size: 14px; padding: 10px 12px; }
-      #send { padding: 0 16px; }
-      details { padding: 0 12px calc(10px + env(safe-area-inset-bottom)); }
+      #chips { padding: 0 12px 10px; }
+      #inputBar { padding: 10px; margin-bottom: 12px; width: calc(100% - 24px); }
+      #q { font-size: 14px; padding: 11px 12px; }
+      #send { padding: 0 18px; }
+      details { width: calc(100% - 24px); }
     }
 
     /* ============ 无障碍：尊重“减少动态效果”系统偏好 ============ */
@@ -256,8 +384,10 @@
 </head>
 
 <body>
-  <!-- 顶部：标题 + 副标题 + 清空按钮 -->
+  <!-- 顶部：标题 + 副标题 + 主题切换 + 清空按钮 -->
   <header>
+    <!-- 主题切换：点击在 浅色→深色→跟随系统 之间循环 -->
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题">🌗</button>
     <h1>许成合 · 个人 AI 助手</h1>
     <p>基于 RAG 检索增强的智能问答 · 关于我的经历、技能、项目，尽管问</p>
     <a href="/admin" class="admin-link" aria-label="打开后台管理页">后台管理 · 检测与上传 →</a>
@@ -293,6 +423,51 @@
   </details>
 
   <script>
+    // ============ 0. 主题：light / dark / system 三态切换，持久化到 localStorage ============
+    const themeToggle = document.getElementById("themeToggle"); // 主题切换按钮
+    const THEME_KEY = "theme";                                // localStorage 键名
+    // 三态对应的 SVG 图标（线描风格，比 emoji 更精致统一）
+    const THEME_ICONS = {
+      light: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+      dark:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
+      system:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>'
+    };
+    const THEME_LABEL = { light: "浅色", dark: "深色", system: "跟随系统" };
+    // 应用主题：把当前模式写入 <html data-theme>，并刷新按钮图标与无障碍标签
+    function applyTheme() {
+      const t = localStorage.getItem(THEME_KEY) || "system"; // 默认跟随系统
+      document.documentElement.setAttribute("data-theme", t);
+      themeToggle.innerHTML = THEME_ICONS[t];
+      themeToggle.setAttribute("aria-label", "当前主题：" + THEME_LABEL[t]);
+    }
+    // 循环切换：浅色 → 深色 → 跟随系统 → 浅色 …
+    function cycleTheme() {
+      const order = ["light", "dark", "system"];
+      const cur = localStorage.getItem(THEME_KEY) || "system";
+      const next = order[(order.indexOf(cur) + 1) % 3];
+      localStorage.setItem(THEME_KEY, next);
+      applyTheme();
+    }
+    themeToggle.addEventListener("click", cycleTheme); // 点击切换
+    applyTheme(); // 页面加载即应用已保存的主题
+    // 处于“跟随系统”时，系统主题变化要实时跟随
+    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+      if ((localStorage.getItem(THEME_KEY) || "system") === "system") applyTheme();
+    });
+
+    // ============ 0.5 磁吸按钮：光标靠近时按钮轻微跟随，提升触感（仅作用于清空按钮） ============
+    function bindMagnetic(el, strength = 0.25) {
+      if (!el) return;
+      el.addEventListener("mousemove", (e) => {
+        const r = el.getBoundingClientRect();
+        const x = (e.clientX - (r.left + r.width / 2)) * strength;
+        const y = (e.clientY - (r.top + r.height / 2)) * strength;
+        el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+      });
+      el.addEventListener("mouseleave", () => { el.style.transform = ""; });
+    }
+    bindMagnetic(document.getElementById("clear"), 0.25);
+
     // ============ 1. 获取页面元素，存成变量方便反复使用 ============
     const chat = document.getElementById("chat");          // 聊天消息容器
     const form = document.getElementById("inputBar");       // 输入表单
