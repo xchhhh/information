@@ -1,6 +1,7 @@
 # 个人 RAG 知识库（企业级）
 
 把个人资料做成可对话的检索增强生成（RAG）网站。本地开发用 Ollama 向量化 + Milvus + DeepSeek 生成；部署走 GitHub Pages 前端 + 后端 PaaS（milvus-lite + doubao embedding）。
+访问地址：http://114.132.53.126:8000/
 
 ## 目录结构
 ```
