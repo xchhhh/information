@@ -1,17 +1,20 @@
-# 服务器部署指南（腾讯云轻量应用服务器 · Ubuntu 22.04）
+# 服务器部署指南（腾讯云轻量应用服务器 · TencentOS Server 4）
 
 目标：把后端 + 前端都跑在服务器上，考官访问 `http://公网IP:8000` 一个地址就能聊天（同源 http，浏览器不拦截）。GitHub 只保留代码仓库。
 
-> 前置：已在腾讯云买好轻量应用服务器（2核2G 即可），镜像选 **Ubuntu 22.04**，并在控制台「防火墙」放通 **TCP 8000** 端口。
+> 前置：已在腾讯云买好轻量应用服务器（2核2G 即可），镜像为 **TencentOS Server 4 for x86_64**，并在控制台「防火墙」放通 **TCP 8000** 端口。
+>
+> TencentOS 是类 RHEL9 系统，包管理用 `dnf`（不是 `apt`），Python 默认 3.11（代码兼容 3.11+，无需另装 3.12）。
 
 ## 1. 登录服务器
 控制台点「登录」用 OrcaTerm，或本地终端：`ssh root@你的公网IP`（密码在控制台重置过）。
 
 ## 2. 装基础工具
 ```bash
-sudo apt update
-sudo apt install -y git python3-venv python3-pip
+dnf install -y git python3 python3-devel python3-pip gcc make
+python3 --version   # 确认输出 3.11.x 左右即可
 ```
+> 说明：RHEL 系没有 `python3-venv` 这个独立包，`venv` 模块已包含在 `python3` 里；`python3-devel` + `gcc make` 用于个别包需要本地编译时保底。
 
 ## 3. 拉代码
 ```bash
@@ -26,11 +29,13 @@ source .venv/bin/activate
 pip install -r requirements-deploy.txt
 ```
 > requirements-deploy.txt 已改为云端友好版：milvus-lite（嵌入式，免 Docker）+ 云端 doubao embedding，并去掉了 Ollama / 本地重排模型依赖。
+>
+> 若 `python3 -m venv .venv` 报错提示缺少模块，先 `dnf install -y python3-devel` 后重试。
 
 ## 5. 配置密钥
 ```bash
 cp .env.example .env
-nano .env
+vi .env        # 或 nano .env（nano 可能需 dnf install -y nano）
 ```
 在 `.env` 里填两项真实值，并**取消注释**下面两行（切换到云端 embedding + 嵌入式 Milvus）：
 ```env
@@ -59,8 +64,8 @@ curl -X POST http://localhost:8000/chat \
 ```
 确认无误后 `Ctrl+C` 停掉前台进程。
 
-## 7. 后台常驻（推荐 systemd）
-新建服务文件：`sudo nano /etc/systemd/system/rag.service`
+## 7. 后台常驻（systemd）
+新建服务文件：`vi /etc/systemd/system/rag.service`
 ```ini
 [Unit]
 Description=Personal RAG API
@@ -75,20 +80,25 @@ User=root
 [Install]
 WantedBy=multi-user.target
 ```
-> 若代码在 `/home/ubuntu/information`，请把上面两处路径改成对应位置。
+> 若代码在别处（如 `/home/xxx/information`），请把上面两处路径改成对应位置。
 
 启用并启动：
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable rag
-sudo systemctl start rag
-sudo systemctl status rag   # 看到 active(running) 即成功
+systemctl daemon-reload
+systemctl enable rag
+systemctl start rag
+systemctl status rag   # 看到 active(running) 即成功
 ```
-之后看日志：`sudo journalctl -u rag -f`
+之后看日志：`journalctl -u rag -f`
 
 ## 8. 防火墙
-- 腾讯云控制台「防火墙」已放通 TCP 8000（步骤前置）。
-- 若服务器本身开了 `ufw`，再执行：`sudo ufw allow 8000`。
+- 腾讯云控制台「防火墙」已放通 TCP 8000（步骤前置，最重要）。
+- 若服务器本身开了 `firewalld`，再执行：
+  ```bash
+  firewall-cmd --zone=public --add-port=8000/tcp --permanent
+  firewall-cmd --reload
+  ```
+  > 查看是否运行：`systemctl is-active firewalld`。若显示 `inactive`，说明系统层防火墙没开，跳过即可（只看控制台防火墙）。
 
 ## 9. 给考官的地址
 直接给：`http://你的公网IP:8000`
@@ -105,5 +115,5 @@ cd /root/information
 git pull
 source .venv/bin/activate
 pip install -r requirements-deploy.txt   # 依赖有变动时
-sudo systemctl restart rag
+systemctl restart rag
 ```
