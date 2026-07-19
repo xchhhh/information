@@ -27,6 +27,44 @@ from langchain_openai import ChatOpenAI
 BASELINE_FAITHFULNESS = 0.4333
 
 
+def _mean_metric(result, name):
+    """从 ragas 评估结果里提取某指标的均值，兼容多种返回结构。
+
+    ragas 不同版本返回形式不一：
+      - 新版：result.scores 是「每条样本一个 dict」的列表 -> [{name: x}, ...]
+      - 旧版：result 本身像 dict -> {name: x} 或 {name: [x, ...]}
+      - 也可通过 result[name] 直接取列（返回序列）
+    """
+    scores = getattr(result, "scores", None)
+    if scores is None:
+        scores = result  # 旧版：result 本身就是 dict 形态
+
+    if isinstance(scores, list):
+        vals = [s[name] for s in scores if isinstance(s, dict) and name in s]
+    elif isinstance(scores, dict):
+        v = scores.get(name)
+        vals = v if isinstance(v, (list, tuple)) else [v]
+    else:
+        vals = None
+
+    # 兜底：用 result[name] 直接取列
+    if not vals:
+        try:
+            col = result[name]
+            vals = col if isinstance(col, (list, tuple)) else [col]
+        except Exception:
+            vals = None
+
+    if not vals:
+        raise ValueError(f"无法从评估结果中提取指标 {name}")
+
+    # 过滤 nan（LLM 裁判偶发失败的样本，nan != nan 恒为 False）
+    clean = [v for v in vals if v == v]
+    if not clean:
+        raise ValueError(f"指标 {name} 全部为 nan，请检查 LLM 裁判调用是否正常")
+    return sum(clean) / len(clean)
+
+
 def build_rows(top_k):
     """复用项目检索 / 生成链路，收集 RAGAS 需要的样本。"""
     path = os.path.join(BASE_DIR, "tests", "eval_set.json")
@@ -65,11 +103,11 @@ def main():
 
     top_k = settings["retrieval"]["top_k_final"]   # 优化后的上下文窗口大小
     rows = build_rows(top_k)
+    print(f"评估样本数: {len(rows)}（来自 tests/eval_set.json）")
     result = evaluate(Dataset.from_list(rows), metrics=[faithfulness])
 
-    # 兼容 ragas 不同版本的结果结构
-    scores = result.scores if hasattr(result, "scores") else result
-    optimized = float(scores["faithfulness"])
+    # 兼容 ragas 不同版本的结果结构：提取 faithfulness 的均值
+    optimized = _mean_metric(result, "faithfulness")
 
     improve = (optimized - BASELINE_FAITHFULNESS) / BASELINE_FAITHFULNESS * 100
 
