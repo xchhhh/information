@@ -42,7 +42,7 @@
 
 ## 四、接口数量与口径说明
 
-后端真正承担业务逻辑 / 管理的 REST 接口为 5 个：/chat、/health、/admin/status、/admin/upload、/admin/ingest；另有 / 与 /admin 两个静态页面路由。项目经历文档里提到的"6 个接口"是把 /health 与某一路由合并计数的口径差异，此处以代码实际路由为准。
+后端真正承担业务逻辑 / 管理的 REST 接口为 5 个：/chat、/health、/admin/status、/admin/upload、/admin/ingest；另有 / 与 /admin 两个静态页面路由。项目经历文档已统一为"5 个 REST 接口 + 2 个静态页面路由"的准确口径，此处以代码实际路由为准。
 
 ## 五、调用示例（后台入库）
 

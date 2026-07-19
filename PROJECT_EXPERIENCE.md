@@ -18,7 +18,7 @@ Python、FastAPI、Uvicorn、Milvus-Lite、火山方舟 Doubao Embedding、DeepS
 
 ### 职责与产出
 
-- 独立完成后端架构：基于 FastAPI 实现 `/chat` 问答、`/health` 健康检查、后台 `/admin/status`、`/admin/upload`、`/admin/ingest` 共 **6 个 REST 接口**，统一 `X-API-Key` 鉴权与 IP 限流。
+- 独立完成后端架构：基于 FastAPI 实现 `/chat` 问答、`/health` 健康检查、后台 `/admin/status`、`/admin/upload`、`/admin/ingest` 共 **5 个 REST 接口**，外加 `/`、`/admin` 两个静态页面路由，统一 `X-API-Key` 鉴权与 IP 限流。
 - 构建混合检索链路：Milvus-Lite 向量检索 + BM25 关键词检索，经 Rerank 重排序后取 Top-K 拼接上下文，召回更准。
 - 实现语义缓存（Semantic Cache），对相似问题复用历史答案，降低重复 Embedding 与 LLM 调用成本。
 - 对接火山方舟 Doubao Embedding 与 DeepSeek LLM 完成向量化与答案生成；修复 Doubao 多模态 Embedding 返回结构差异导致的 KeyError。
