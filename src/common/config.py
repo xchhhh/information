@@ -10,3 +10,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 # 读取 config/settings.yaml，解析成 Python 字典，全局可用
 with open(os.path.join(BASE_DIR, "config", "settings.yaml"), "r", encoding="utf-8") as f:
     settings = yaml.safe_load(f)   # settings["embedding"] / settings["milvus"] ... 这样取用
+
+# 环境变量覆盖：部署到服务器时，在 .env 里设 EMBEDDING_PROVIDER=doubao / MILVUS_MODE=lite，
+# 即可切换到「云端 embedding + 嵌入式 Milvus」，本地开发不设则保持 settings.yaml 默认值
+if os.getenv("EMBEDDING_PROVIDER"):
+    settings["embedding"]["provider"] = os.getenv("EMBEDDING_PROVIDER")
+if os.getenv("MILVUS_MODE"):
+    settings["milvus"]["mode"] = os.getenv("MILVUS_MODE")

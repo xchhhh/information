@@ -1,15 +1,16 @@
-from sentence_transformers import CrossEncoder  # 跨编码器重排模型
 from common.config import settings  # 读 reranker 模型名
 
 _model = None        # 模型对象（加载成功后）
 _model_failed = False  # 模型是否加载失败（失败则跳过重排，保证链路可用）
 
 def _get_model():
-    # 懒加载重排模型；若加载失败（模型未下载 / 无网络），标记失败并返回 None
+    # 懒加载重排模型；若加载失败（未装 sentence-transformers / 模型未下载 / 无网络），标记失败并返回 None
     global _model, _model_failed
     if _model is not None or _model_failed:
         return _model
     try:
+        # 惰性导入：部署环境不装 sentence-transformers 时也能正常启动（仅跳过重排）
+        from sentence_transformers import CrossEncoder
         _model = CrossEncoder(settings["reranker"]["model"])  # BAAI/bge-reranker-v2-m3
     except Exception as e:
         _model_failed = True

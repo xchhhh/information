@@ -1,19 +1,17 @@
-# 部署到免费 PaaS（如 Railway / Render）时用的精简依赖
-# 剔除了 gptcache / langfuse / ragas（这些是缓存/可观测/评估用的，线上后端不需要，会拖慢构建）
+# Cloud-friendly deploy deps: milvus-lite embedded (no Docker) + cloud doubao embedding + rerank fallback
+# Dropped langchain-ollama / sentence-transformers / transformers (cloud needs no local Ollama/rerank model)
 fastapi
 uvicorn
 pydantic
 python-dotenv
 pyyaml
 pymilvus
+milvus-lite
 numpy
 langchain
 langchain-community
 langchain-openai
-langchain-ollama
 langchain-text-splitters
-sentence-transformers
-transformers
 rank_bm25
 pypdf
 requests

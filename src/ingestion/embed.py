@@ -1,7 +1,7 @@
 import os              # 读环境变量
 import requests         # 调 doubao 云端 embedding 的 HTTP 请求
-from langchain_ollama import OllamaEmbeddings  # 本地 Ollama embedding 封装
 from common.config import settings  # 读 embedding 配置
+# 说明：OllamaEmbeddings 改为惰性导入（见 get_embedder），部署环境未装 langchain-ollama 时也能启动
 
 class DoubaoEmbeddings:
     # 火山方舟 doubao 多模态 embedding 的 LangChain 兼容封装（这里只用纯文本模式）
@@ -42,5 +42,6 @@ def get_embedder():
             api_key=os.environ[d["api_key_env"]],   # 密钥从环境变量读
             dimensions=d["dimensions"],
         )
-    # 默认（本地开发）走 Ollama
+    # 默认（本地开发）走 Ollama；惰性导入避免部署环境未装 langchain-ollama 时崩溃
+    from langchain_ollama import OllamaEmbeddings
     return OllamaEmbeddings(model=e["model"], base_url=e["base_url"])
