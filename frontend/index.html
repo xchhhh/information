@@ -71,6 +71,15 @@
     }
     .clear-btn:hover { background: rgba(255, 255, 255, .28); } /* hover 更亮 */
 
+    /* 头部“后台管理”入口链接（指向 /admin 后台页） */
+    .admin-link {
+      display: inline-block; margin-top: 6px;          /* 与副标题留点间距 */
+      font-size: 12px; color: rgba(255, 255, 255, .85);  /* 半透明白字 */
+      text-decoration: none;                             /* 去掉下划线 */
+      border-bottom: 1px dashed rgba(255, 255, 255, .5); /* 虚线下划，提示可点 */
+    }
+    .admin-link:hover { color: #fff; border-bottom-color: #fff; } /* hover 变实白 */
+
     /* ============ 中部：聊天消息滚动区 ============ */
     #chat {
       flex: 1;                     /* 占据头部与输入区之外的全部高度 */
@@ -251,6 +260,7 @@
   <header>
     <h1>许成合 · 个人 AI 助手</h1>
     <p>基于 RAG 检索增强的智能问答 · 关于我的经历、技能、项目，尽管问</p>
+    <a href="/admin" class="admin-link" aria-label="打开后台管理页">后台管理 · 检测与上传 →</a>
     <button id="clear" class="clear-btn" type="button" aria-label="清空当前对话">清空对话</button>
   </header>
 

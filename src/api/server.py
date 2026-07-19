@@ -7,8 +7,10 @@ from api.auth import get_api_key                                # 鉴权依赖
 from api.rate_limit import limiter                              # 限流
 from rag import answer as rag_answer                            # 顶层问答函数
 from common.config import settings                             # 配置
+from api.admin import router as admin_router                  # 后台管理路由（检测/上传/入库）
 
 app = FastAPI(title="Personal RAG API")   # 创建 FastAPI 应用
+app.include_router(admin_router)         # 挂载后台路由：/admin/status、/admin/upload、/admin/ingest
 
 # 允许前端（GitHub Pages 等）跨域调用本接口
 app.add_middleware(
@@ -40,8 +42,13 @@ async def health():
 
 # 同源部署：根路径直接返回前端聊天页面，考官访问 http://公网IP:8000 即可使用
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # src/api -> 项目根
-_FRONTEND = os.path.join(_ROOT, "frontend", "index.html")
+_FRONTEND_DIR = os.path.join(_ROOT, "frontend")               # 前端目录（下面两个页面都在这里）
+_FRONTEND = os.path.join(_FRONTEND_DIR, "index.html")        # 聊天页
 
 @app.get("/")
 async def index():
     return FileResponse(_FRONTEND)
+
+@app.get("/admin")      # 后台管理页（纯静态 HTML，无需鉴权；接口才要 X-API-Key）
+async def admin_page():
+    return FileResponse(os.path.join(_FRONTEND_DIR, "admin.html"))
