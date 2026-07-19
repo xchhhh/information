@@ -105,23 +105,48 @@ def build_rows(top_k, strict, temperature):
     return rows
 
 
+def _eval_single(rows, metric, judge):
+    """单独评估一个指标，避免多指标同跑时某一指标报错污染整行。
+
+    返回该指标均值；若评估失败（如该指标需要 Embedding 而当前裁判不支持）返回 None。
+    """
+    try:
+        try:
+            metric.llm = judge
+        except Exception:
+            pass  # 个别版本接口不同，跳过即可
+        dataset = Dataset.from_list(rows)
+        result = evaluate(dataset, metrics=[metric])
+        return _mean_metric(result, metric.name)
+    except Exception as e:  # noqa: BLE001
+        print(f"  ! 指标 {metric.name} 评估失败，跳过：{type(e).__name__}: {e}")
+        return None
+
+
 def eval_metrics(rows):
-    """给 RAGAS 的三个裁判指标挂上 DeepSeek（替代默认 gpt-4o-mini），返回各指标均值。"""
+    """给 RAGAS 的三个裁判指标分别挂上 DeepSeek（替代默认 gpt-4o-mini），逐个隔离评估。
+
+    逐个评估的好处：某个指标（如需要 Embedding 的）失败时，不会把同一样本的其他指标也变成 nan。
+    """
     judge = ChatOpenAI(
         base_url=settings["llm"]["base_url"],   # https://api.deepseek.com
         api_key=os.environ["OPENAI_API_KEY"],
         model="deepseek-v4-flash",
         temperature=0,
     )
-    for m in METRICS.values():
-        try:
-            m.llm = judge
-        except Exception:
-            pass  # 个别版本接口不同，跳过即可
+    return {name: _eval_single(rows, m, judge) for name, m in METRICS.items()}
 
-    dataset = Dataset.from_list(rows)
-    result = evaluate(dataset, metrics=list(METRICS.values()))
-    return {name: _mean_metric(result, name) for name in METRICS}
+
+def _fmt(v):
+    """把指标值格式化为 4 位小数，失败/缺测显示 N/A。"""
+    return f"{v:.4f}" if isinstance(v, (int, float)) else "N/A"
+
+
+def _improve(b, o):
+    """计算提升百分比；任一侧缺测（None）则显示 N/A。"""
+    if isinstance(b, (int, float)) and isinstance(o, (int, float)) and b:
+        return f"{(o - b) / b * 100:+.1f}%"
+    return "N/A"
 
 
 def main():
@@ -141,9 +166,7 @@ def main():
     print("\n===== RAG 质量对比（RAGAS 三指标）=====")
     print(f"{'指标':<18}{'优化前':>10}{'优化后':>10}{'提升':>12}")
     for name in METRICS:
-        b, o = base[name], opt[name]
-        improve = (o - b) / b * 100 if b else 0.0
-        print(f"{name:<18}{b:>10.4f}{o:>10.4f}{improve:>+11.1f}%")
+        print(f"{name:<18}{_fmt(base[name]):>10}{_fmt(opt[name]):>10}{_improve(base[name], opt[name]):>12}")
     print("=======================================\n")
 
     # 生成可读报告
@@ -157,8 +180,7 @@ def main():
     ]
     for name in METRICS:
         b, o = base[name], opt[name]
-        improve = (o - b) / b * 100 if b else 0.0
-        lines.append(f"| {name} | {b:.4f} | {o:.4f} | {improve:+.1f}% |\n")
+        lines.append(f"| {name} | {_fmt(b)} | {_fmt(o)} | {_improve(b, o)} |\n")
     lines.append(
         "\n## 配置差异（即本次优化手段）\n\n"
         "| 维度 | 优化前（基线） | 优化后 |\n"
