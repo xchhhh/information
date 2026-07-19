@@ -28,7 +28,7 @@ chunking:
 
 retrieval:
   top_k_retrieve: 20        # 每条检索路（稠密 / BM25）先各召回前 20
-  top_k_final: 4            # 融合 + 重排后，真正送进 LLM 的段落数
+  top_k_final: 8            # 融合 + 重排后，真正送进 LLM 的段落数（由 4 提升到 8，扩大上下文窗口以提升答案忠实度）
   rrf_k: 60                 # RRF 融合常数（标准默认 60）
   fusion_strategy: rrf      # 融合策略：rrf（倒数排名融合），最稳
 
