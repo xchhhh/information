@@ -1,14 +1,12 @@
 [
-  {
-    "question": "你的姓名是什么？",
-    "reference": "许成合"
-  },
-  {
-    "question": "你擅长哪些技术方向？",
-    "reference": "大模型应用开发、AI 应用工程"
-  },
-  {
-    "question": "你做过哪些项目？",
-    "reference": "个人 RAG 知识库系统"
-  }
+  {"question": "你做过什么项目？", "reference": "我独立开发了一套基于 FastAPI + Milvus-Lite 的个人 RAG 知识库问答系统，支持语义检索与智能问答。"},
+  {"question": "你的技术栈是什么？", "reference": "Python、FastAPI、Uvicorn、Milvus-Lite、火山方舟 Doubao Embedding、DeepSeek、RAG、混合检索、Rerank、systemd、原生 HTML/CSS/JS。"},
+  {"question": "你用的是什么向量数据库？", "reference": "用的是 Milvus-Lite 嵌入式向量库，无需独立服务，集合需显式 load_collection 后才能检索。"},
+  {"question": "检索是怎么做的？", "reference": "采用混合检索：Milvus-Lite 向量检索加 BM25 关键词检索，再经 Rerank 重排序，取 top-k 拼接上下文送入 LLM。"},
+  {"question": "前端页面有什么特点？", "reference": "有聊天页和后台管理页两个页面，支持浅色/深色/跟随系统三态主题、玻璃拟态、卡片式对话、磁吸按钮与拖拽上传。"},
+  {"question": "有没有缓存？", "reference": "实现了语义缓存 Semantic Cache，对相似问题复用历史答案，减少重复 Embedding 与 LLM 调用。"},
+  {"question": "怎么部署的？", "reference": "部署在腾讯云服务器，用 systemd 常驻服务，FastAPI 同源托管前后端，端口 8000，通过 Gitee 镜像解决国内拉取问题。"},
+  {"question": "后台管理页能做什么？", "reference": "提供系统状态检测、多文件上传（PDF/TXT/Markdown）、清空重建与追加入库能力。"},
+  {"question": "怎么保证安全？", "reference": "接口使用 X-API-Key 鉴权、按 IP 限流，上传做文件类型白名单与路径穿越防护。"},
+  {"question": "用了哪些大模型？", "reference": "Embedding 用火山方舟 Doubao，答案生成用 DeepSeek。"}
 ]
