@@ -643,7 +643,15 @@
           },
           body: JSON.stringify({ query }),         // 请求体：{"query": "问题"}
         });
-        if (!res.ok) throw new Error("后端返回错误：HTTP " + res.status); // 非 2xx 抛错
+        if (!res.ok) {
+          // 非 2xx：尽量解析后端返回的 JSON 错误详情（detail 字段），让用户看到真实原因
+          let detail = "HTTP " + res.status;
+          try {
+            const errJson = await res.json();
+            if (errJson && errJson.detail) detail = "HTTP " + res.status + "：" + errJson.detail;
+          } catch (_) {}
+          throw new Error(detail);
+        }
 
         const data = await res.json();             // 解析 JSON
         msgEl.classList.remove("typing-msg");      // 去掉 typing 态
