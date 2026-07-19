@@ -21,6 +21,13 @@ python3 --version   # 确认输出 3.11.x 左右即可
 git clone https://github.com/xchhhh/information.git
 cd information
 ```
+> 国内服务器直连 `github.com` 常被重置（报错 `Failure when receiving data from the peer`）。若 clone 失败，改用 Gitee 镜像：先把 GitHub 仓库导入 Gitee（`https://gitee.com` → 右上角「+」→ 导入仓库），再：
+> ```bash
+> git clone https://gitee.com/你的用户名/information.git
+> cd information
+> git remote set-url origin https://gitee.com/你的用户名/information.git   # 以后 pull 也走镜像
+> ```
+> （ghproxy.com / gitclone.com 等公共镜像经常超时或 502，不如 Gitee 稳。）
 
 ## 4. 建虚拟环境并装依赖
 ```bash
@@ -46,6 +53,28 @@ EMBEDDING_PROVIDER=doubao
 MILVUS_MODE=lite
 ```
 > 重排模型在 2核2G 上会自动加载失败并跳过（代码已容错），不影响问答，只是少了重排、答案质量略降。
+
+## 5.5 上传资料并入库（首次部署必做）
+
+代码仓库**不含**你的原始资料（`data/` 被 `.gitignore` 忽略），服务器 clone 下来 `data/raw` 是空的。不入库直接调 `/chat` 会报 `未找到 BM25 语料`，必须先把资料传上去并跑一次入库脚本。
+
+1) 把本机资料传到服务器项目目录 `data/raw`（支持 `.txt` / `.md` / `.pdf`）：
+   - 本机 PowerShell（推荐）：
+     ```powershell
+     ssh root@公网IP "mkdir -p /root/information/data/raw"
+     scp -r "本机资料目录\*" root@公网IP:/root/information/data/raw/
+     ```
+   - 或腾讯云控制台 OrcaTerm「文件上传」拖到 `/root/information/data/raw`。
+   > 注意：资料要放到**项目目录**下的 `data/raw`，不是系统根目录 `/data/raw`；若 `run.py` 输出 `inserted 0 chunks`，先 `ls data/raw` 确认文件在正确位置、且格式为 txt|md|pdf。
+
+2) 服务器上入库（用 doubao 向量化 + 写 milvus-lite，消耗少量 ARK 额度）：
+   ```bash
+   cd /root/information
+   source .venv/bin/activate
+   python src/ingestion/run.py
+   # 看到 inserted N chunks; BM25 corpus saved to ... 即成功（N>0）
+   ```
+   > 入库只需做一次；以后换资料重跑即可。milvus-lite 的固定数据库文件 `milvus_lite.db` 会生成在项目根目录，已被 `.gitignore` 忽略，勿提交。
 
 ## 6. 先前台试跑
 ```bash

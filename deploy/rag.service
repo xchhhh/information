@@ -1,0 +1,13 @@
+[Unit]
+Description=Personal RAG API
+After=network.target
+
+[Service]
+# 代码在 /root/information；若放在别处请改下面两处路径
+WorkingDirectory=/root/information
+ExecStart=/root/information/.venv/bin/python /root/information/app.py
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target
