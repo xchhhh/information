@@ -12,21 +12,31 @@ def get_llm(temperature=None):
         temperature=temperature if temperature is not None else l["temperature"],
     )
 
-def generate_answer(query, contexts, temperature=0):
+def generate_answer(query, contexts, temperature=0, strict=True):
     # 根据检索到的资料段生成答案；temperature 默认 0 让回答更稳定、减少编造
+    # strict=True：强化约束（生产/优化后版本），严格只依据资料、禁止外部知识补充
+    # strict=False：宽松版（基线/优化前版本），资料不足时允许适度结合自身知识补充
     ctx_block = "\n\n".join(
         f"[资料{i+1}]（来源：{c.get('source', '')}）\n{c['text']}" for i, c in enumerate(contexts)
     )
-    # 强化约束：严格只依据资料，禁止用外部知识补充，资料缺失就明说没有
-    prompt = (
-        "你是基于个人资料的智能助手，必须严格只依据下面【资料】作答，"
-        "绝对禁止使用任何【资料】之外的知识或自身记忆进行补充。\n"
-        "规则：\n"
-        "1. 若【资料】中能找到答案，基于资料回答并标注引用来源（资料编号）；\n"
-        "2. 若【资料】中没有相关信息，必须明确回答“资料中没有相关信息”，不得猜测；\n"
-        "3. 不得生成资料未提及的项目、数据或结论。\n\n"
-        f"【资料】\n{ctx_block}\n\n用户问题：{query}"
-    )
+    if strict:
+        # 强化约束：严格只依据资料，禁止用外部知识补充，资料缺失就明说没有
+        prompt = (
+            "你是基于个人资料的智能助手，必须严格只依据下面【资料】作答，"
+            "绝对禁止使用任何【资料】之外的知识或自身记忆进行补充。\n"
+            "规则：\n"
+            "1. 若【资料】中能找到答案，基于资料回答并标注引用来源（资料编号）；\n"
+            "2. 若【资料】中没有相关信息，必须明确回答“资料中没有相关信息”，不得猜测；\n"
+            "3. 不得生成资料未提及的项目、数据或结论。\n\n"
+            f"【资料】\n{ctx_block}\n\n用户问题：{query}"
+        )
+    else:
+        # 宽松版（基线）：允许资料不足时适度结合自身知识补充
+        prompt = (
+            "你是基于个人资料的智能助手，请参考下面【资料】回答用户问题，"
+            "资料不足时可结合自身知识适当补充。\n\n"
+            f"【资料】\n{ctx_block}\n\n用户问题：{query}"
+        )
     out = get_llm(temperature=temperature).invoke(prompt)
     answer = out.content.strip() if hasattr(out, "content") else str(out)
     sources = [c.get("source", "") for c in contexts]   # 收集来源，返回给前端
