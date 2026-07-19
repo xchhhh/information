@@ -2,14 +2,16 @@ import os                          # 读环境变量
 from langchain_openai import ChatOpenAI  # 用 OpenAI 兼容接口接 DeepSeek
 from common.config import settings  # 读 llm 配置
 
-def get_llm(temperature=None):
-    # 构造 DeepSeek 聊天模型；temperature 可覆盖配置（严谨/评估场景传 0 更稳）
+def get_llm(temperature=None, max_tokens=None):
+    # 构造 DeepSeek 聊天模型；temperature / max_tokens 可覆盖配置
+    # 不显式设 max_tokens 会吃到模型默认上限，长答案会被从中间截断 -> 前端“回答不完整”
     l = settings["llm"]
     return ChatOpenAI(
         base_url=l["base_url"],
         api_key=os.environ["LLM_API_KEY"],   # 从 .env 读 key（绝不硬编码）
         model=l["model"],
         temperature=temperature if temperature is not None else l["temperature"],
+        max_tokens=max_tokens if max_tokens is not None else l.get("max_tokens", 2048),
     )
 
 def generate_answer(query, contexts, temperature=0, strict=True):

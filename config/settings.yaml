@@ -40,6 +40,7 @@ llm:
   base_url: https://api.deepseek.com   # DeepSeek 的 OpenAI 兼容接口地址
   model: deepseek-chat
   temperature: 0.3
+  max_tokens: 4096                     # 单次生成最大输出 token；不设会吃模型默认上限导致长答案被截断（前端“回答不完整”）
   # api_key 从环境变量 LLM_API_KEY 读，不写在这里（防泄露）
 
 langfuse:
