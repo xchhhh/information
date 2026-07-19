@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Depends, Request, HTTPException     # FastAPI 核心
 from fastapi.middleware.cors import CORSMiddleware                # 跨域中间件（前端 GitHub Pages 需要）
+import os                                                          # 路径处理：定位前端页面
+from fastapi.responses import FileResponse                       # 返回前端 HTML 文件
 from pydantic import BaseModel                                  # 请求/响应数据校验
 from api.auth import get_api_key                                # 鉴权依赖
 from api.rate_limit import limiter                              # 限流
@@ -35,3 +37,11 @@ async def chat(req: ChatReq, request: Request, api_key: str = Depends(get_api_ke
 @app.get("/health")    # 健康检查，部署/探活用
 async def health():
     return {"status": "ok"}
+
+# 同源部署：根路径直接返回前端聊天页面，考官访问 http://公网IP:8000 即可使用
+_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # src/api -> 项目根
+_FRONTEND = os.path.join(_ROOT, "frontend", "index.html")
+
+@app.get("/")
+async def index():
+    return FileResponse(_FRONTEND)

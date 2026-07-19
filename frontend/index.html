@@ -293,7 +293,7 @@
     const apiKeyInput = document.getElementById("apiKey");  // API Key 输入
 
     // ============ 2. 读取/初始化配置（存浏览器 localStorage，刷新不丢） ============
-    apiBaseInput.value = localStorage.getItem("apiBase") || "http://127.0.0.1:8000";
+    apiBaseInput.value = localStorage.getItem("apiBase") || "";  // 默认空=同源：部署在同一起后端时不用填地址
     apiKeyInput.value = localStorage.getItem("apiKey") || "change_me";
     // 用户修改时实时存回，下次打开自动带出
     apiBaseInput.addEventListener("input", () => localStorage.setItem("apiBase", apiBaseInput.value.trim()));
@@ -360,7 +360,7 @@
 
       try {
         // 组装请求地址：去掉末尾多余的斜杠，再拼 /chat
-        const base = apiBaseInput.value.trim().replace(/\/$/, "");
+        const base = (apiBaseInput.value.trim() || window.location.origin).replace(/\/$/, "");  // 空则用同源地址
         const res = await fetch(base + "/chat", {
           method: "POST",
           headers: {
