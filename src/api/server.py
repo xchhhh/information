@@ -43,7 +43,8 @@ async def chat(req: ChatReq, request: Request, api_key: str = Depends(get_api_ke
     # 2) 调问答主流程；捕获意外异常，返回清晰提示而非裸 500，便于定位
     try:
         # 深度研究模式：走多智能体 Orchestrator（拆解->并行子Agent->汇总）；否则走原单链路
-        result = orchestrate(req.query) if req.deep else rag_answer(req.query)
+        # orchestrate 是 async def（内部 asyncio.gather/to_thread 并发），必须 await；否则拿到的是 coroutine，下面 result["answer"] 会抛 TypeError->500
+        result = await orchestrate(req.query) if req.deep else rag_answer(req.query)
     except FileNotFoundError as e:
         _log_error("FileNotFoundError", e)
         raise HTTPException(status_code=503, detail=f"知识库尚未入库：{e}")
