@@ -24,7 +24,7 @@ Python、FastAPI、Uvicorn、Milvus-Lite、火山方舟 Doubao Embedding、DeepS
 - 对接火山方舟 Doubao Embedding 与 DeepSeek LLM 完成向量化与答案生成；修复 Doubao 多模态 Embedding 返回结构差异导致的 KeyError。
 - 开发后台管理页：系统状态检测、多文件上传（PDF/TXT/Markdown 白名单 + 路径穿越防护）、清空重建 / 追加入库。
 - 前端实现 **2 个完整页面**（聊天页 + 后台页），支持浅色 / 深色 / 跟随系统三态主题、玻璃拟态、卡片式对话、磁吸按钮、拖拽上传。
-- 完成腾讯云部署与 systemd 常驻服务，通过 Gitee 镜像解决国内服务器 GitHub 直连超时问题，实现稳定更新。
+- 完成腾讯云部署与 systemd 常驻服务（服务名 `rag`），通过 Gitee 镜像解决国内服务器 GitHub 直连超时问题，实现稳定更新；撰写 `DEPLOY.md` 沉淀「本地提交 → 双远端推送 → 服务器拉取重启 → 健康检查」全流程，已验证「深度研究」多智能体模式在公网环境实测可用，考官可现场访问演示。
 - 搭建自动化评估流水线，对 10 条真实问答对量化检索质量：以"向量最相似 top-10 段落"为标准答案集，测量混合检索 top-k 的**相关段落覆盖率**（确定性、可复现），数据驱动 top-k 等检索超参迭代优化。
 - 设计**多智能体 Orchestrator 总控（深度研究模式）**：针对"介绍你整个项目"等需跨文档综合的复杂问题，由 Planner 先用 LLM 拆解为多个子问题，并行派发子 Agent 复用既有 `answer()` 混合检索链路，最后 Synthesizer 汇总去重并标注来源。并发采用 `asyncio.gather` + `asyncio.to_thread` 跑同步检索；子 Agent 失败优雅跳过、全失败回退单链路、Synthesizer 失败用规则拼接兜底，保障可用性。前端加「深度研究」开关并展示子问题思维链，让复杂问题的回答更完整、可解释。
 
