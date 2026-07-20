@@ -307,6 +307,34 @@
       color: var(--ink);
     }
 
+    /* 深度研究思维链：展示 Orchestrator 拆解出的子问题，风格与来源标签一致 */
+    .sub-queries {
+      align-self: flex-start;
+      font-size: 12px;
+      color: var(--text-dim);
+      max-width: 88%;
+      margin: 4px 0 0 44px;
+      padding-left: 4px;
+      animation: msg-in .32s var(--ease) both;
+    }
+    .sub-queries b { color: var(--ink); }
+    .sub-tag {
+      display: inline-block;
+      background: var(--surface);
+      border: 1px dashed var(--border);  /* 虚线边，区别于来源实线 */
+      border-radius: 8px;
+      padding: 3px 9px;
+      margin: 3px 4px 0 0;
+      color: var(--ink);
+    }
+    /* 输入栏里的“深度研究”开关 */
+    .deep-toggle {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 12px; color: var(--text-dim); cursor: pointer;
+      user-select: none; white-space: nowrap; padding: 0 4px;
+    }
+    .deep-toggle input { accent-color: var(--accent, #6366f1); cursor: pointer; }
+
     /* ============ 示例问题 chips（提升首屏可用性，引导用户提问） ============ */
     #chips {
       display: flex; flex-wrap: wrap; gap: 8px;   /* 可换行的小标签行 */
@@ -480,6 +508,9 @@
   <!-- 底部输入区：用 <form> 包裹，回车与点击按钮都会触发提交（submit） -->
   <form id="inputBar" aria-label="输入问题">
     <input id="q" type="text" placeholder="输入你的问题，按回车发送…" aria-label="你的问题" autocomplete="off" />
+    <label class="deep-toggle" title="开启后由多智能体把问题拆解、并行检索各资料块再汇总，适合“介绍整个项目”这类综合问题">
+      <input type="checkbox" id="deepToggle" /> 深度研究
+    </label>
     <button id="send" type="submit" aria-label="发送问题">发送</button>
   </form>
 
@@ -546,6 +577,7 @@
     const clearBtn = document.getElementById("clear");      // 清空按钮
     const apiBaseInput = document.getElementById("apiBase");// 后端地址输入
     const apiKeyInput = document.getElementById("apiKey");  // API Key 输入
+    const deepToggle = document.getElementById("deepToggle"); // “深度研究”开关（多智能体模式）
 
     // ============ 2. 读取/初始化配置（存浏览器 localStorage，刷新不丢） ============
     apiBaseInput.value = localStorage.getItem("apiBase") || "";  // 默认空=同源：部署在同一起后端时不用填地址
@@ -600,6 +632,18 @@
       chat.scrollTop = chat.scrollHeight;
     }
 
+    // ============ 5.5 工具函数：深度研究时展示 Orchestrator 拆解出的子问题（思维链） ============
+    function addSubQueries(subs) {
+      if (!subs || !subs.length) return;   // 非深度模式或无拆解则不显示
+      const div = document.createElement("div");
+      div.className = "sub-queries";
+      // 标题 + 每个子问题一个虚线小标签
+      div.innerHTML = "<b>深度研究拆分的子问题：</b>" + subs
+        .map(s => `<span class="sub-tag">${escapeHtml(s)}</span>`).join("");
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
     // ============ 6. 工具函数：从完整路径取文件名 ============
     function basename(path) { return String(path).split(/[\\/]/).pop(); }
 
@@ -641,7 +685,7 @@
             "Content-Type": "application/json",
             "X-API-Key": apiKeyInput.value.trim(), // 鉴权头，值需在后端白名单
           },
-          body: JSON.stringify({ query }),         // 请求体：{"query": "问题"}
+          body: JSON.stringify({ query, deep: deepToggle.checked }), // 请求体：问题 + 是否深度研究（多智能体）
         });
         if (!res.ok) {
           // 非 2xx：尽量解析后端返回的 JSON 错误详情（detail 字段），让用户看到真实原因
@@ -657,6 +701,7 @@
         msgEl.classList.remove("typing-msg");      // 去掉 typing 态
         msgEl.innerHTML = renderMarkdown(data.answer); // 用真答案替换占位
         addSources(data.sources);                  // 展示来源标签
+        addSubQueries(data.sub_queries);          // 深度模式：展示拆解出的子问题思维链
       } catch (err) {
         msgEl.classList.remove("typing-msg");
         msgEl.innerHTML = "请求失败：" + escapeHtml(err.message)

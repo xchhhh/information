@@ -56,3 +56,9 @@ cache:
 auth:
   api_keys:                 # 网站调用后端时的鉴权 key 列表（部署前务必改掉 change_me）
     - change_me
+
+orchestrator:
+  max_sub_queries: 3        # Planner 最多拆出的子问题数（越小越省 token / 越不易触发限流）
+  timeout: 30               # 单个子 Agent（检索+生成）的超时秒数；超时则该子问题跳过
+  # 触发方式：前端“深度研究”开关开启时才走 Orchestrator；关闭则走原有单链路（确定性、零额外开销）
+  enabled: true
