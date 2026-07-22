@@ -14,272 +14,430 @@
   <title>许成合 · 个人 AI 助手</title>
 
   <style>
-    /* ============ 设计令牌（Design Tokens）：默认深色（贴近 DeepSeek 的克制深色） ============ */
+    /* ============ 设计令牌（Design Tokens）：默认浅色（贴近 ChatGPT 干净观感） ============ */
     :root {
-      --accent: #4D6BFE;            /* 主色：DeepSeek 蓝紫，克制专业 */
-      --accent-strong: #3b5bdb;     /* 主色加深：hover 态 */
-      --bg: #0d0d0d;                /* 页面背景：近黑 */
-      --surface: #161616;           /* 卡片 / 输入区 / 顶栏：深灰 */
-      --surface-2: #242424;         /* 用户气泡 / 次级面 */
-      --ink: #ececec;               /* 主文字：浅灰白 */
-      --text-dim: #8a8a8a;          /* 次要文字：中灰 */
-      --border: #2a2a2a;            /* 边框：深灰描边，比主题色更统一 */
-      --border-soft: #222222;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,.4);
-      --shadow: 0 8px 24px -12px rgba(0,0,0,.6);
-      --radius: 16px;               /* 统一大圆角 */
-      --radius-sm: 10px;            /* 小圆角 */
-      --ease: cubic-bezier(0.16, 1, 0.3, 1); /* 平滑减速缓动 */
+      --bg: #ffffff;                /* 主区背景 */
+      --sidebar-bg: #f9f9f9;        /* 侧栏背景：极浅灰 */
+      --surface: #ffffff;           /* 卡片/输入胶囊 */
+      --surface-hover: #ececec;     /* hover 次级面：浅灰块 */
+      --surface-active: #e0e0e0;    /* active 更深一档 */
+      --ink: #0d0d0d;               /* 主文字：近黑 */
+      --text-dim: #5d5d5d;          /* 次要文字：中灰 */
+      --text-faint: #8e8e8e;        /* 极弱文字：placeholder / 禁用 */
+      --border: #e5e5e5;            /* 标准边框 */
+      --border-soft: #f0f0f0;       /* 极弱边框 */
+      --accent: #0d0d0d;            /* 主色：近黑（发送按钮/头像） */
+      --accent-ink: #ffffff;        /* 主色上的文字 */
+      --purple: #ab68ff;            /* 头像紫色 */
+      --shadow: 0 2px 8px rgba(0,0,0,0.04);  /* 输入胶囊极轻阴影 */
+      --shadow-pop: 0 8px 24px rgba(0,0,0,0.08); /* 弹窗阴影 */
+      --radius: 12px;
+      --radius-sm: 8px;
+      --radius-pill: 28px;          /* 输入胶囊圆角 */
+      --sidebar-w: 260px;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    /* ============ 浅色主题令牌（data-theme="light" 时生效） ============ */
-    :root[data-theme="light"] {
-      --bg: #ffffff;
-      --surface: #f7f7f8;
-      --surface-2: #eff0f1;
-      --ink: #1a1a1a;
-      --text-dim: #6b6b6b;
-      --border: #e5e5e7;
-      --border-soft: #ededf0;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
-      --shadow: 0 8px 24px -12px rgba(0,0,0,.12);
+    /* ============ 深色主题令牌（data-theme="dark" 时生效） ============ */
+    :root[data-theme="dark"] {
+      --bg: #0d0d0d;
+      --sidebar-bg: #171717;
+      --surface: #1e1e1e;
+      --surface-hover: #2a2a2a;
+      --surface-active: #333333;
+      --ink: #ececec;
+      --text-dim: #b0b0b0;
+      --text-faint: #6e6e6e;
+      --border: #2a2a2a;
+      --border-soft: #1e1e1e;
+      --accent: #ececec;
+      --accent-ink: #0d0d0d;
+      --shadow: 0 2px 8px rgba(0,0,0,0.2);
+      --shadow-pop: 0 8px 24px rgba(0,0,0,0.4);
     }
     /* 跟随系统且系统为深色时，套用同一套深色令牌 */
     @media (prefers-color-scheme: dark) {
       :root[data-theme="system"] {
-        --bg: #0d0d0d; --surface: #161616; --surface-2: #242424;
-        --ink: #ececec; --text-dim: #8a8a8a; --border: #2a2a2a; --border-soft: #222222;
-        --shadow-sm: 0 1px 3px rgba(0,0,0,.4); --shadow: 0 8px 24px -12px rgba(0,0,0,.6);
+        --bg: #0d0d0d; --sidebar-bg: #171717; --surface: #1e1e1e;
+        --surface-hover: #2a2a2a; --surface-active: #333333;
+        --ink: #ececec; --text-dim: #b0b0b0; --text-faint: #6e6e6e;
+        --border: #2a2a2a; --border-soft: #1e1e1e;
+        --accent: #ececec; --accent-ink: #0d0d0d;
       }
     }
 
     /* 清零默认边距，统一盒模型 */
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    /* 页面整体：纯色底、纵向弹性布局、占满视口高度 */
+    /* 页面整体：占满视口高度 */
+    html, body { height: 100%; }
     body {
       font-family: "Inter", "Segoe UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
       background: var(--bg);
       color: var(--ink);
-      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+      transition: background-color .25s var(--ease), color .25s var(--ease);
+    }
+
+    /* ============ 整体布局：CSS Grid [侧栏 | 主区] ============ */
+    .app {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      height: 100dvh;
+      transition: grid-template-columns .25s var(--ease);
+    }
+    .app.collapsed { grid-template-columns: 0 1fr; }
+
+    /* ============ 侧栏 ============ */
+    .sidebar {
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      -webkit-font-smoothing: antialiased;
-      transition: background-color .3s var(--ease), color .3s var(--ease);
+      overflow: hidden;
+      transition: margin-left .25s var(--ease);
     }
-
-    /* ============ 顶部：极简标题栏（纯色 + 底部细线，去掉渐变/极光） ============ */
-    header {
-      position: relative;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 14px 20px;
+    .app.collapsed .sidebar { margin-left: calc(-1 * var(--sidebar-w)); }
+    .sidebar-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 12px;
     }
-    .profile {
-      display: flex; align-items: center; gap: 12px;
-      max-width: 800px; margin: 0 auto; text-align: left;
-    }
-    /* 小 Logo：圆角方块 + 主色描边，克制不浮夸 */
-    .avatar-sm {
-      width: 38px; height: 38px; flex: 0 0 auto; border-radius: 10px;
-      background: var(--surface-2); color: var(--accent);
-      display: grid; place-items: center; border: 1px solid var(--border);
-    }
-    .avatar-sm svg { width: 22px; height: 22px; }
-    .profile-meta h1 { font-size: 16px; font-weight: 650; letter-spacing: .2px; }
-    .profile-meta .role { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
-    .profile-meta .admin-link {
-      display: inline-block; margin-top: 4px; font-size: 12px;
-      color: var(--accent); text-decoration: none;
-      border-bottom: 1px dashed var(--border);
-      transition: border-color .18s var(--ease);
-    }
-    .profile-meta .admin-link:hover { border-bottom-color: var(--accent); }
-
-    /* 右侧操作按钮（主题切换 + 清空）：简洁圆形/胶囊，玻璃拟态去掉 */
-    .header-actions { position: absolute; top: 12px; right: 16px; display: flex; gap: 8px; }
     .icon-btn {
-      width: 34px; height: 34px; border-radius: 9px;
-      display: grid; place-items: center; cursor: pointer;
-      background: var(--surface-2); color: var(--ink);
-      border: 1px solid var(--border);
-      transition: background .18s var(--ease), transform .18s var(--ease);
+      width: 36px; height: 36px; border: none; background: transparent;
+      border-radius: 8px; cursor: pointer; display: grid; place-items: center;
+      color: var(--ink); transition: background .15s var(--ease);
+      flex-shrink: 0;
     }
-    .icon-btn:hover { background: var(--border); }
-    .icon-btn:active { transform: scale(.94); }
-    .icon-btn svg { width: 17px; height: 17px; }
-    .clear-btn {
-      height: 34px; padding: 0 12px; border-radius: 9px; cursor: pointer;
-      background: var(--surface-2); color: var(--ink);
-      border: 1px solid var(--border); font-size: 12.5px;
-      transition: background .18s var(--ease);
+    .icon-btn:hover { background: var(--surface-hover); }
+    .icon-btn svg { width: 18px; height: 18px; }
+    .brand {
+      font-size: 15px; font-weight: 600; color: var(--ink);
+      flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .clear-btn:hover { background: var(--border); }
+    .new-chat-btn {
+      display: flex; align-items: center; gap: 10px;
+      margin: 4px 12px 8px; padding: 11px 14px;
+      border: 1px solid var(--border); border-radius: 10px;
+      background: var(--surface); color: var(--ink);
+      font-size: 14px; font-weight: 500; cursor: pointer;
+      text-align: left; transition: background .15s var(--ease);
+    }
+    .new-chat-btn:hover { background: var(--surface-hover); }
+    .new-chat-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
 
-    /* ============ 中部：聊天消息滚动区 ============ */
-    #chat {
-      flex: 1; overflow-y: auto; padding: 22px 20px;
-      display: flex; flex-direction: column; gap: 16px;
-      max-width: 800px; width: 100%; margin: 0 auto;
-      scroll-behavior: smooth; position: relative; z-index: 1;
+    .nav-list { padding: 4px 8px; display: flex; flex-direction: column; gap: 1px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 9px 12px; border-radius: 8px;
+      color: var(--ink); font-size: 14px;
+      text-decoration: none; cursor: pointer;
+      transition: background .15s var(--ease);
     }
-    #chat::-webkit-scrollbar { width: 8px; }
-    #chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
-    #chat::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+    .nav-item:hover:not(.disabled) { background: var(--surface-hover); }
+    .nav-item.disabled { opacity: .45; cursor: not-allowed; }
+    .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .nav-item.external::after {
+      content: "↗"; margin-left: auto; font-size: 12px; color: var(--text-faint);
+    }
 
-    /* ============ 对话卡片：AI 靠左无气泡（纯文本），用户靠右浅块 ============ */
+    .sidebar-section { padding: 4px 8px; }
+    .section-title {
+      font-size: 11.5px; font-weight: 600; color: var(--text-dim);
+      padding: 12px 12px 6px; letter-spacing: .3px;
+    }
+    .pinned-item, .recent-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: 8px;
+      color: var(--ink); font-size: 13.5px;
+      text-decoration: none; cursor: pointer;
+      transition: background .15s var(--ease);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      width: 100%; border: none; background: transparent; text-align: left;
+    }
+    .pinned-item:hover, .recent-item:hover { background: var(--surface-hover); }
+    .pinned-item svg, .recent-item svg { width: 14px; height: 14px; flex-shrink: 0; opacity: .7; }
+    .recent-section { flex: 1; overflow-y: auto; min-height: 0; }
+    .recent-section::-webkit-scrollbar { width: 6px; }
+    .recent-section::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; }
+    .recent-list { list-style: none; }
+
+    .sidebar-footer {
+      border-top: 1px solid var(--border);
+      padding: 10px 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .user-card {
+      flex: 1; display: flex; align-items: center; gap: 10px;
+      padding: 6px 8px; border-radius: 8px; cursor: pointer;
+      transition: background .15s var(--ease); min-width: 0;
+    }
+    .user-card:hover { background: var(--surface-hover); }
+    .user-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--purple); color: #fff;
+      display: grid; place-items: center;
+      font-size: 12px; font-weight: 600; flex-shrink: 0;
+    }
+    .user-info { min-width: 0; }
+    .user-name { font-size: 13px; color: var(--ink); font-weight: 500; line-height: 1.3; }
+    .user-plan { font-size: 11.5px; color: var(--text-dim); line-height: 1.3; }
+
+    /* ============ 主区 ============ */
+    .main {
+      display: flex; flex-direction: column;
+      overflow: hidden; background: var(--bg);
+      position: relative;
+    }
+    .mobile-header {
+      display: none;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .mobile-brand { font-size: 15px; font-weight: 600; }
+
+    /* 消息滚动区 */
+    .messages-container {
+      flex: 1; overflow-y: auto;
+      display: flex; flex-direction: column;
+      scroll-behavior: smooth;
+    }
+    .messages-container::-webkit-scrollbar { width: 8px; }
+    .messages-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+    .messages-container::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+    /* 欢迎页（无消息时显示） */
+    .welcome {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px 20px; text-align: center;
+      animation: fadeIn .4s var(--ease) both;
+    }
+    .welcome-title {
+      font-size: 30px; font-weight: 500;
+      color: var(--ink); margin-bottom: 10px;
+      letter-spacing: -.3px;
+    }
+    .welcome-subtitle {
+      font-size: 14.5px; color: var(--text-dim);
+      max-width: 480px; line-height: 1.6;
+    }
+    .messages-container.has-messages .welcome { display: none; }
+
+    /* 对话卡片：左 AI / 右 用户（与 ChatGPT 一致） */
     .bubble-card {
-      display: flex; gap: 12px; align-items: flex-start;
-      max-width: 92%;
+      display: flex; gap: 14px; align-items: flex-start;
+      max-width: 768px; width: 100%;
+      margin: 0 auto; padding: 14px 20px;
       animation: msg-in .3s var(--ease) both;
     }
-    .bubble-card.user { align-self: flex-end; flex-direction: row-reverse; }
+    .bubble-card.user { flex-direction: row-reverse; }
     .bc-avatar {
-      width: 30px; height: 30px; flex: 0 0 auto; border-radius: 8px;
+      width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px;
       display: grid; place-items: center; color: #fff;
       font-size: 12px; font-weight: 700;
     }
-    .bubble-card.bot  .bc-avatar { background: var(--accent); }
-    .bubble-card.user .bc-avatar { background: var(--surface-2); color: var(--ink); border: 1px solid var(--border); }
-    .bc-avatar svg { width: 17px; height: 17px; }
-    .bc-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-    .bc-head { display: flex; align-items: baseline; gap: 8px; font-size: 11.5px; color: var(--text-dim); }
-    .bc-name { font-weight: 600; color: var(--ink); }
+    .bubble-card.bot  .bc-avatar { background: var(--accent); color: var(--accent-ink); }
+    .bubble-card.user .bc-avatar {
+      background: var(--purple); color: #fff;
+    }
+    .bc-avatar svg { width: 16px; height: 16px; }
+    .bc-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; max-width: calc(100% - 44px); }
+    .bubble-card.user .bc-body { align-items: flex-end; }
+    .bc-head {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12.5px; color: var(--text-dim);
+    }
     .bubble-card.user .bc-head { flex-direction: row-reverse; }
+    .bc-name { font-weight: 600; color: var(--ink); }
+    .deep-badge {
+      font-size: 10.5px; padding: 2px 7px; border-radius: 4px;
+      background: var(--surface-hover); color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
     .bc-msg {
-      padding: 2px 0; line-height: 1.75; font-size: 15px;
+      line-height: 1.75; font-size: 15px;
       white-space: pre-wrap; word-break: break-word;
     }
-    /* AI 消息：无背景气泡，纯文本（贴近 DeepSeek 的克制观感） */
     .bubble-card.bot .bc-msg { color: var(--ink); }
-    .bubble-card.bot .bc-msg strong { color: var(--accent); }
-    /* 用户消息：右对齐浅色块 */
+    .bubble-card.bot .bc-msg strong { color: var(--ink); font-weight: 600; }
     .bubble-card.user .bc-msg {
-      background: var(--surface-2); color: var(--ink);
-      padding: 11px 15px; border-radius: var(--radius); border: 1px solid var(--border);
+      background: var(--surface-hover); color: var(--ink);
+      padding: 10px 16px; border-radius: 20px;
     }
 
     /* “思考中”行：左侧三个跳动圆点 */
-    .thinking-row { align-self: flex-start; display: inline-flex; padding-left: 42px; }
-    .typing { display: inline-flex; align-items: center; gap: 5px; }
+    .thinking-row {
+      display: flex; gap: 14px; align-items: flex-start;
+      max-width: 768px; width: 100%;
+      margin: 0 auto; padding: 14px 20px;
+    }
+    .thinking-row .bc-avatar { background: var(--accent); color: var(--accent-ink); }
+    .typing { display: inline-flex; align-items: center; gap: 5px; padding-top: 8px; }
     .typing .dot {
       width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim);
       opacity: .4; animation: blink 1.2s infinite both;
     }
     .typing .dot:nth-child(2) { animation-delay: .2s; }
     .typing .dot:nth-child(3) { animation-delay: .4s; }
+
+    /* 来源 / 思维链 缩进对齐 AI 正文 */
+    .sources, .sub-queries {
+      max-width: 768px; width: 100%;
+      margin: 2px auto 0; padding: 0 20px 0 74px;
+      font-size: 12px; color: var(--text-dim);
+      animation: msg-in .3s var(--ease) both;
+    }
+    .sources b, .sub-queries b { color: var(--ink); font-weight: 600; margin-right: 4px; }
+    .src-tag, .sub-tag {
+      display: inline-block; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 3px 9px; margin: 3px 4px 0 0; color: var(--ink);
+      font-size: 11.5px;
+    }
+    .sub-tag { border-style: dashed; }
+
+    /* ============ 输入区（胶囊 + 发送圆按钮） ============ */
+    .input-area {
+      padding: 12px 20px 16px;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+    }
+    .input-pill {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      padding: 6px 6px 6px 12px;
+      max-width: 768px; width: 100%;
+      box-shadow: var(--shadow);
+      transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
+    }
+    .input-pill:focus-within {
+      border-color: var(--text-faint);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .input-pill .icon-btn { width: 34px; height: 34px; border-radius: 50%; }
+    .input-pill .icon-btn svg { width: 18px; height: 18px; }
+    .input-pill input {
+      flex: 1; border: none; background: transparent;
+      color: var(--ink); font-size: 15px; outline: none;
+      padding: 8px 8px; min-width: 0;
+    }
+    .input-pill input::placeholder { color: var(--text-faint); }
+    .model-select {
+      border: none; background: transparent;
+      color: var(--text-dim); font-size: 13px;
+      padding: 6px 8px; cursor: pointer; border-radius: 8px;
+      appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%238e8e8e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+      background-repeat: no-repeat; background-position: right 6px center;
+      padding-right: 22px; flex-shrink: 0;
+    }
+    .model-select:hover { background-color: var(--surface-hover); }
+    .send-btn {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--accent); color: var(--accent-ink);
+      border: none; cursor: pointer; flex-shrink: 0;
+      display: grid; place-items: center;
+      transition: opacity .15s var(--ease), transform .12s var(--ease);
+    }
+    .send-btn:hover:not(:disabled) { opacity: .85; }
+    .send-btn:active:not(:disabled) { transform: scale(.94); }
+    .send-btn:disabled { opacity: .25; cursor: not-allowed; }
+    .send-btn svg { width: 16px; height: 16px; }
+
+    /* 建议卡（欢迎页时显示） */
+    .suggestions {
+      display: flex; gap: 10px;
+      max-width: 768px; width: 100%;
+      animation: fadeIn .5s var(--ease) .1s both;
+    }
+    .messages-container.has-messages ~ .input-area .suggestions { display: none; }
+    .suggestion-card {
+      flex: 1; display: flex; align-items: center; gap: 10px;
+      padding: 13px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--ink); font-size: 13.5px;
+      cursor: pointer; transition: all .15s var(--ease);
+      text-align: left; min-width: 0;
+    }
+    .suggestion-card:hover:not(:disabled) {
+      background: var(--surface-hover); border-color: var(--text-faint);
+    }
+    .suggestion-card:disabled { opacity: .45; cursor: not-allowed; }
+    .suggestion-icon {
+      width: 18px; height: 18px; flex-shrink: 0;
+      display: grid; place-items: center; color: var(--text-dim);
+    }
+    .suggestion-icon svg { width: 16px; height: 16px; }
+
+    /* ============ 设置弹窗（从输入区 + 按钮弹出） ============ */
+    .settings-popover {
+      position: fixed; bottom: 90px; left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 16px; width: min(420px, calc(100vw - 32px));
+      box-shadow: var(--shadow-pop);
+      z-index: 200;
+      animation: popIn .2s var(--ease) both;
+    }
+    .settings-popover[hidden] { display: none; }
+    .settings-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+    .settings-row:last-child { margin-bottom: 0; }
+    .settings-row label {
+      font-size: 12px; font-weight: 600; color: var(--text-dim);
+    }
+    .settings-row input {
+      padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+      font-size: 13.5px; background: var(--bg); color: var(--ink);
+      outline: none; transition: border-color .15s var(--ease);
+    }
+    .settings-row input:focus { border-color: var(--accent); }
+
+    /* ============ 动画 ============ */
+    @keyframes msg-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: none; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; } to { opacity: 1; }
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: translate(-50%, 8px); }
+      to   { opacity: 1; transform: translate(-50%, 0); }
+    }
     @keyframes blink {
       0%, 80%, 100% { opacity: .3; transform: translateY(0); }
       40%           { opacity: 1;  transform: translateY(-3px); }
     }
-    @keyframes msg-in {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: none; }
+
+    /* ============ 响应式：窄屏侧栏变抽屉 ============ */
+    @media (max-width: 768px) {
+      .app { grid-template-columns: 0 1fr; }
+      .sidebar {
+        position: fixed; top: 0; bottom: 0; left: 0;
+        width: var(--sidebar-w); z-index: 300;
+        box-shadow: var(--shadow-pop);
+        margin-left: 0;
+      }
+      .app.mobile-open .sidebar { margin-left: 0; }
+      .app.mobile-open { grid-template-columns: var(--sidebar-w) 1fr; }
+      .app.mobile-open::after {
+        content: ""; position: fixed; inset: 0; background: rgba(0,0,0,.4);
+        z-index: 250; animation: fadeIn .2s var(--ease) both;
+      }
+      .mobile-header { display: flex; align-items: center; gap: 8px; }
+      .icon-btn#collapseBtn { display: none; }
+      .icon-btn#mobileMenuBtn { display: grid; }
+      .icon-btn#mobileMenuBtn { width: 36px; height: 36px; }
+    }
+    @media (min-width: 769px) {
+      .icon-btn#mobileMenuBtn { display: none; }
     }
 
-    /* 来源引用区：AI 卡片下方，缩进对齐气泡正文 */
-    .sources {
-      align-self: flex-start; font-size: 12px; color: var(--text-dim);
-      max-width: 92%; margin-left: 42px; padding-left: 2px;
-      animation: msg-in .3s var(--ease) both;
-    }
-    .sources b { color: var(--ink); }
-    .src-tag {
-      display: inline-block; background: var(--surface); border: 1px solid var(--border);
-      border-radius: 7px; padding: 3px 9px; margin: 3px 4px 0 0; color: var(--ink);
-    }
-
-    /* 深度研究思维链：展示 Orchestrator 拆解出的子问题 */
-    .sub-queries {
-      align-self: flex-start; font-size: 12px; color: var(--text-dim);
-      max-width: 92%; margin-left: 42px; padding-left: 2px;
-      animation: msg-in .3s var(--ease) both;
-    }
-    .sub-queries b { color: var(--ink); }
-    .sub-tag {
-      display: inline-block; background: var(--surface); border: 1px dashed var(--border);
-      border-radius: 7px; padding: 3px 9px; margin: 3px 4px 0 0; color: var(--ink);
-    }
-    .deep-toggle {
-      display: inline-flex; align-items: center; gap: 4px;
-      font-size: 12px; color: var(--text-dim); cursor: pointer;
-      user-select: none; white-space: nowrap; padding: 0 4px;
-    }
-    .deep-toggle input { accent-color: var(--accent); cursor: pointer; }
-
-    /* ============ 示例问题 chips ============ */
-    #chips {
-      display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
-      padding: 0 20px 10px; max-width: 800px; margin: 0 auto; width: 100%;
-    }
-    .chip {
-      font-size: 12.5px; padding: 7px 13px; border: 1px solid var(--border);
-      border-radius: 999px; background: var(--surface); color: var(--text-dim);
-      cursor: pointer; transition: all .18s var(--ease);
-    }
-    .chip:hover { border-color: var(--accent); color: var(--accent); }
-    .chip:active { transform: scale(.97); }
-
-    /* ============ 底部：输入区（圆角容器 + 发送按钮） ============ */
-    #inputBar {
-      display: flex; gap: 10px; align-items: center;
-      padding: 10px; margin: 0 auto 16px; max-width: 800px; width: calc(100% - 32px);
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); box-shadow: var(--shadow-sm);
-    }
-    #q {
-      flex: 1; padding: 11px 14px; border: none; border-radius: var(--radius-sm);
-      background: transparent; color: var(--ink); font-size: 15px; outline: none;
-    }
-    #q::placeholder { color: var(--text-dim); }
-    #send {
-      padding: 0 20px; height: 40px; border: none; border-radius: var(--radius-sm);
-      background: var(--accent); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
-      transition: filter .18s var(--ease), transform .12s var(--ease);
-    }
-    #send:hover:not(:disabled) { filter: brightness(1.08); }
-    #send:active:not(:disabled) { transform: scale(.96); }
-    #send:disabled { opacity: .5; cursor: not-allowed; }
-
-    /* ============ 设置区（可折叠） ============ */
-    details {
-      max-width: 800px; margin: 0 auto 12px; width: calc(100% - 32px);
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 2px 16px;
-    }
-    summary {
-      cursor: pointer; font-size: 13px; color: var(--text-dim);
-      padding: 11px 0; user-select: none; display: flex; align-items: center; gap: 6px;
-    }
-    summary::before {
-      content: ""; width: 6px; height: 6px; border-radius: 50%;
-      background: var(--accent);
-    }
-    .settings { display: flex; gap: 10px; flex-wrap: wrap; padding-bottom: 10px; }
-    .settings input {
-      flex: 1; min-width: 200px; padding: 10px 12px; border: 1px solid var(--border);
-      border-radius: 8px; font-size: 13px; background: var(--bg); color: var(--ink);
-    }
-    .settings input:focus { border-color: var(--accent); outline: none; }
-
+    /* ============ 无障碍 ============ */
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-    /* ============ 响应式：窄屏 ============ */
-    @media (max-width: 640px) {
-      header { padding: 12px 14px; }
-      .profile { gap: 10px; }
-      .avatar-sm { width: 34px; height: 34px; border-radius: 9px; }
-      .profile-meta h1 { font-size: 15px; }
-      .profile-meta .role { font-size: 12px; }
-      .header-actions { top: 10px; right: 12px; }
-      #chat { padding: 16px 14px; gap: 12px; }
-      .bubble-card { max-width: 96%; }
-      .sources, .sub-queries { max-width: 96%; margin-left: 42px; }
-      #chips { padding: 0 12px 8px; }
-      #inputBar { margin-bottom: 12px; width: calc(100% - 24px); }
-    }
-
-    /* ============ 无障碍：尊重“减少动态效果” ============ */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
     }
@@ -287,68 +445,117 @@
 </head>
 
 <body>
-  <!-- 顶部：极简标题栏（Logo + 名字/身份 + 后台入口 + 主题/清空） -->
-  <header>
-    <div class="profile">
-      <div class="avatar-sm" aria-hidden="true">
-        <!-- 聊天气泡 Logo：主色描边 -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1-.9-3.8A8.38 8.38 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z"/>
-          <path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01"/>
-        </svg>
+  <div class="app" id="app">
+
+    <!-- ============ 左侧栏 ============ -->
+    <aside class="sidebar" id="sidebar">
+      <header class="sidebar-header">
+        <button class="icon-btn" id="collapseBtn" type="button" aria-label="收起侧栏" title="收起">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+        </button>
+        <div class="brand">许成合 AI</div>
+      </header>
+
+      <button class="new-chat-btn" id="newChatBtn" type="button" title="开始一段新对话">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+        <span>新聊天</span>
+      </button>
+
+      <nav class="nav-list" aria-label="主导航">
+        <a class="nav-item external" href="/admin" title="打开后台管理">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <span>文件库</span>
+        </a>
+      </nav>
+
+      <section class="sidebar-section" aria-label="已置顶">
+        <h3 class="section-title">已置顶</h3>
+        <button class="pinned-item" type="button" data-q="介绍你的 RAG 系统设计是怎么做的？">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76V6h6v4.76l3 5V17H6v-1.24l3-5z"/></svg>
+          <span>企业 RAG 系统设计</span>
+        </button>
+      </section>
+
+      <section class="sidebar-section recent-section" aria-label="最近对话">
+        <h3 class="section-title">最近</h3>
+        <ul class="recent-list" id="recentList"></ul>
+      </section>
+
+      <footer class="sidebar-footer">
+        <div class="user-card" title="个人资料">
+          <div class="user-avatar">许</div>
+          <div class="user-info">
+            <div class="user-name">许成合</div>
+            <div class="user-plan">个人版</div>
+          </div>
+        </div>
+        <div class="footer-actions">
+          <button class="icon-btn" id="themeToggle" type="button" aria-label="切换主题" title="切换主题"></button>
+        </div>
+      </footer>
+    </aside>
+
+    <!-- ============ 主区 ============ -->
+    <main class="main">
+      <div class="mobile-header">
+        <button class="icon-btn" id="mobileMenuBtn" type="button" aria-label="菜单" title="菜单">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="brand mobile-brand">许成合 AI</div>
       </div>
-      <div class="profile-meta">
-        <h1>许成合 · 个人 AI 助手</h1>
-        <p class="role">基于 RAG 检索增强 · 关于我的经历、技能、项目，尽管问</p>
-        <a href="/admin" class="admin-link" aria-label="打开后台管理页">后台管理 · 检测与上传 →</a>
+
+      <!-- 消息流（欢迎页是它的第一个子元素） -->
+      <div class="messages-container" id="chat" role="log" aria-live="polite" aria-relevant="additions" aria-label="对话记录">
+        <div class="welcome" id="welcome">
+          <h1 class="welcome-title">我们先从哪里开始呢？</h1>
+          <p class="welcome-subtitle">基于 RAG 的个人知识库 · 问我关于经历、技能、项目的一切；开启「深度研究」可让多智能体拆解后综合回答</p>
+        </div>
+      </div>
+
+      <!-- 输入区：永远在底部 -->
+      <div class="input-area">
+        <div class="input-pill">
+          <button class="icon-btn" id="settingsBtn" type="button" aria-label="设置" title="后端地址 / API Key">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <input id="q" type="text" placeholder="有问题，尽管问" aria-label="你的问题" autocomplete="off" />
+          <select class="model-select" id="modelSelect" title="选择问答模式">
+            <option value="fast">快速问答</option>
+            <option value="deep">深度研究</option>
+          </select>
+          <button id="send" class="send-btn" type="submit" aria-label="发送" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+          </button>
+        </div>
+        <div class="suggestions" id="chips" aria-label="建议">
+          <button class="suggestion-card" type="button" data-q="介绍你整个项目">
+            <span class="suggestion-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+            <span>查找资料</span>
+          </button>
+          <button class="suggestion-card" type="button" data-q="帮我总结你的项目经验，并列出 3 条亮点">
+            <span class="suggestion-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></span>
+            <span>撰写或编辑</span>
+          </button>
+          <button class="suggestion-card" type="button" disabled title="即将推出">
+            <span class="suggestion-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>
+            <span>生成图片</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- 设置弹窗（默认隐藏） -->
+    <div class="settings-popover" id="settingsPopover" hidden>
+      <div class="settings-row">
+        <label for="apiBase">后端地址</label>
+        <input id="apiBase" placeholder="如 http://127.0.0.1:8000" aria-label="后端地址" />
+      </div>
+      <div class="settings-row">
+        <label for="apiKey">API Key</label>
+        <input id="apiKey" placeholder="change_me" aria-label="API Key" />
       </div>
     </div>
-    <div class="header-actions">
-      <!-- 主题切换：浅色→深色→跟随系统 循环 -->
-      <button id="themeToggle" class="icon-btn" type="button" aria-label="切换主题">🌗</button>
-      <!-- 清空对话 -->
-      <button id="clear" class="clear-btn" type="button" aria-label="清空当前对话">清空</button>
-    </div>
-  </header>
-
-  <!-- 聊天消息区 -->
-  <main id="chat" role="log" aria-live="polite" aria-relevant="additions" aria-label="对话记录">
-    <!-- 首条欢迎语（AI 卡片）。清空对话时会重新插入这条。 -->
-    <div class="bubble-card bot">
-      <div class="bc-avatar" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1-.9-3.8A8.38 8.38 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01"/></svg>
-      </div>
-      <div class="bc-body">
-        <div class="bc-head"><span class="bc-name">AI 助手</span><span class="bc-time">——</span></div>
-        <div class="bc-msg">你好，我是许成合的个人 AI 助手。你可以问我：他会哪些技术？做过什么项目？期望的岗位是什么？</div>
-      </div>
-    </div>
-  </main>
-
-  <!-- 示例问题 -->
-  <nav id="chips" aria-label="示例问题">
-    <button class="chip" type="button">你会哪些技术？</button>
-    <button class="chip" type="button">做过什么项目？</button>
-    <button class="chip" type="button">期望岗位是什么？</button>
-  </nav>
-
-  <!-- 底部输入区 -->
-  <form id="inputBar" aria-label="输入问题">
-    <input id="q" type="text" placeholder="输入你的问题，按回车发送…" aria-label="你的问题" autocomplete="off" />
-    <label class="deep-toggle" title="开启后由多智能体把问题拆解、并行检索各资料块再汇总，适合“介绍整个项目”这类综合问题">
-      <input type="checkbox" id="deepToggle" /> 深度研究
-    </label>
-    <button id="send" type="submit" aria-label="发送问题">发送</button>
-  </form>
-
-  <!-- 可折叠设置区 -->
-  <details>
-    <summary>连接设置（后端地址 / API Key）</summary>
-    <div class="settings">
-      <input id="apiBase" placeholder="后端地址，如 http://127.0.0.1:8000" aria-label="后端地址" />
-      <input id="apiKey" placeholder="API Key（默认 change_me）" aria-label="API Key" />
-    </div>
-  </details>
+  </div>
 
   <script>
     // ============ 0. 主题：light / dark / system 三态切换，持久化到 localStorage ============
@@ -379,82 +586,78 @@
       if ((localStorage.getItem(THEME_KEY) || "system") === "system") applyTheme();
     });
 
-    // ============ 1. 获取页面元素 ============
-    const chat = document.getElementById("chat");
-    const form = document.getElementById("inputBar");
-    const input = document.getElementById("q");
-    const sendBtn = document.getElementById("send");
-    const clearBtn = document.getElementById("clear");
+    // ============ 1. DOM 引用 ============
+    const app          = document.getElementById("app");
+    const chat         = document.getElementById("chat");
+    const welcome      = document.getElementById("welcome");
+    const form         = document.querySelector(".input-area");
+    const input        = document.getElementById("q");
+    const sendBtn      = document.getElementById("send");
+    const modelSelect  = document.getElementById("modelSelect");
+    const settingsBtn  = document.getElementById("settingsBtn");
+    const settingsPop  = document.getElementById("settingsPopover");
     const apiBaseInput = document.getElementById("apiBase");
-    const apiKeyInput = document.getElementById("apiKey");
-    const deepToggle = document.getElementById("deepToggle");
+    const apiKeyInput  = document.getElementById("apiKey");
+    const newChatBtn   = document.getElementById("newChatBtn");
+    const collapseBtn  = document.getElementById("collapseBtn");
+    const mobileBtn    = document.getElementById("mobileMenuBtn");
+    const recentList   = document.getElementById("recentList");
 
-    // ============ 2. 读取/初始化配置 ============
+    // ============ 2. 读取/初始化 API 配置 ============
     apiBaseInput.value = localStorage.getItem("apiBase") || "";
-    apiKeyInput.value = localStorage.getItem("apiKey") || "change_me";
+    apiKeyInput.value  = localStorage.getItem("apiKey")  || "change_me";
     apiBaseInput.addEventListener("input", () => localStorage.setItem("apiBase", apiBaseInput.value.trim()));
-    apiKeyInput.addEventListener("input", () => localStorage.setItem("apiKey", apiKeyInput.value.trim()));
+    apiKeyInput.addEventListener("input",  () => localStorage.setItem("apiKey",  apiKeyInput.value.trim()));
 
-    // ============ 2.5 头像 / 名字常量 ============
-    const BOT_AVATAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1-.9-3.8A8.38 8.38 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01"/></svg>';
-    const BOT_NAME = "AI 助手";
+    // ============ 3. 输入控制：发送按钮在有内容时启用 ============
+    function syncSendState() {
+      sendBtn.disabled = !input.value.trim();
+    }
+    input.addEventListener("input", syncSendState);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.isComposing && !sendBtn.disabled) {
+        e.preventDefault();
+        ask();
+      }
+    });
+    syncSendState();
+
+    // ============ 4. 设置弹窗：点 + 切换显示，点击外部关闭 ============
+    settingsBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      settingsPop.hidden = !settingsPop.hidden;
+    });
+    document.addEventListener("click", (e) => {
+      if (settingsPop.hidden) return;
+      if (settingsPop.contains(e.target) || settingsBtn.contains(e.target)) return;
+      settingsPop.hidden = true;
+    });
+
+    // ============ 5. 侧栏：折叠 / 移动端抽屉 ============
+    collapseBtn.addEventListener("click", () => {
+      app.classList.toggle("collapsed");
+    });
+    mobileBtn.addEventListener("click", () => {
+      app.classList.toggle("mobile-open");
+    });
+    // 点击移动端遮罩关闭
+    app.addEventListener("click", (e) => {
+      // 只在 mobile-open 状态下，遮罩(::after)在 app 上，点击 app 本身（非 sidebar/header）时关闭
+      if (app.classList.contains("mobile-open") &&
+          !document.getElementById("sidebar").contains(e.target) &&
+          !mobileBtn.contains(e.target)) {
+        app.classList.remove("mobile-open");
+      }
+    });
+
+    // ============ 6. 常量 / 工具函数 ============
+    const BOT_NAME  = "AI 助手";
     const USER_NAME = "我";
     function nowTime() { return new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }); }
-
-    // ============ 3. 欢迎语原文 ============
-    const WELCOME = "你好，我是许成合的个人 AI 助手。你可以问我：他会哪些技术？做过什么项目？期望的岗位是什么？";
-
-    // ============ 4. 工具函数：插入一条消息卡片 ============
-    function addMessage(role, text) {
-      const card = document.createElement("div");
-      card.className = "bubble-card " + role;
-      const avatar = role === "bot" ? BOT_AVATAR : USER_NAME;
-      const name = role === "bot" ? BOT_NAME : USER_NAME;
-      card.innerHTML =
-        '<div class="bc-avatar" aria-hidden="true">' + avatar + '</div>' +
-        '<div class="bc-body">' +
-          '<div class="bc-head"><span class="bc-name">' + name + '</span>' +
-            '<span class="bc-time">' + nowTime() + '</span></div>' +
-          '<div class="bc-msg">' + (role === "bot" ? renderMarkdown(text) : escapeHtml(text)) + '</div>' +
-        '</div>';
-      chat.appendChild(card);
-      chat.scrollTop = chat.scrollHeight;
-      return card;
-    }
-
-    // ============ 5. 工具函数：渲染来源标签 ============
-    function addSources(sources) {
-      if (!sources || sources.length === 0) return;
-      const unique = [...new Set(sources)];
-      const div = document.createElement("div");
-      div.className = "sources";
-      div.innerHTML = "<b>来源：</b>" + unique
-        .map(s => `<span class="src-tag">${escapeHtml(basename(s))}</span>`).join("");
-      chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight;
-    }
-
-    // ============ 5.5 工具函数：深度研究思维链 ============
-    function addSubQueries(subs) {
-      if (!subs || !subs.length) return;
-      const div = document.createElement("div");
-      div.className = "sub-queries";
-      div.innerHTML = "<b>深度研究拆分的子问题：</b>" + subs
-        .map(s => `<span class="sub-tag">${escapeHtml(s)}</span>`).join("");
-      chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight;
-    }
-
-    // ============ 6. 工具函数：取文件名 ============
     function basename(path) { return String(path).split(/[\\/]/).pop(); }
-
-    // ============ 7. 工具函数：转义 HTML ============
     function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
-
-    // ============ 8. 工具函数：简易 markdown -> HTML ============
     function renderMarkdown(text) {
       let html = escapeHtml(text);
       html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
@@ -462,46 +665,135 @@
       return html;
     }
 
-    // ============ 9. 核心：发送问题 -> 后端 SSE 流 -> 逐字渲染 ============
-    async function ask(query) {
-      query = (query || input.value).trim();
-      if (!query) return;
+    // ============ 7. 最近提问（localStorage 持久化，最多 20 条） ============
+    const RECENT_KEY = "recentChats";
+    const RECENT_MAX = 20;
+    function loadRecent() {
+      try { return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"); }
+      catch (_) { return []; }
+    }
+    function saveRecent(list) {
+      localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, RECENT_MAX)));
+    }
+    function pushRecent(q) {
+      const list = loadRecent().filter(x => x !== q);  // 去重
+      list.unshift(q);
+      saveRecent(list);
+      renderRecent();
+    }
+    function renderRecent() {
+      const list = loadRecent();
+      recentList.innerHTML = list.map(q =>
+        '<li><button class="recent-item" type="button" title="' + escapeHtml(q) + '" data-q="' + escapeHtml(q) + '">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
+          '<span>' + escapeHtml(q) + '</span>' +
+        '</button></li>'
+      ).join("");
+      // 绑定点击：点击最近问题 → 重新问
+      recentList.querySelectorAll(".recent-item").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const q = btn.getAttribute("data-q") || "";
+          if (q) ask(q);
+        });
+      });
+    }
+    renderRecent();
 
-      addMessage("user", query);     // 显示用户问题
-      input.value = "";
-      sendBtn.disabled = true;
+    // ============ 8. 插入消息卡片 / 来源 / 思维链 ============
+    function addMessage(role, text, isDeep) {
+      const card = document.createElement("div");
+      card.className = "bubble-card " + role;
+      const isBot = role === "bot";
+      const avatar = isBot
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1-.9-3.8A8.38 8.38 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01"/></svg>'
+        : USER_NAME;
+      const name = isBot ? BOT_NAME : USER_NAME;
+      const deepBadge = (isBot && isDeep) ? '<span class="deep-badge">深度研究</span>' : "";
+      card.innerHTML =
+        '<div class="bc-avatar" aria-hidden="true">' + avatar + '</div>' +
+        '<div class="bc-body">' +
+          '<div class="bc-head"><span class="bc-name">' + name + '</span>' + deepBadge +
+            '<span class="bc-time">' + nowTime() + '</span></div>' +
+          '<div class="bc-msg">' + (isBot ? renderMarkdown(text) : escapeHtml(text)) + '</div>' +
+        '</div>';
+      chat.appendChild(card);
+      chat.classList.add("has-messages");
+      chat.scrollTop = chat.scrollHeight;
+      return card;
+    }
+    function addSources(sources) {
+      if (!sources || sources.length === 0) return;
+      const unique = [...new Set(sources)];
+      const div = document.createElement("div");
+      div.className = "sources";
+      div.innerHTML = "<b>来源：</b>" + unique
+        .map(s => '<span class="src-tag">' + escapeHtml(basename(s)) + '</span>').join("");
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+    function addSubQueries(subs) {
+      if (!subs || !subs.length) return;
+      const div = document.createElement("div");
+      div.className = "sub-queries";
+      div.innerHTML = "<b>已拆为子问题：</b>" + subs
+        .map(s => '<span class="sub-tag">' + escapeHtml(s) + '</span>').join("");
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
 
-      // 先显示一个“思考中”行（流式数据到达前给用户反馈）
-      const typingRow = document.createElement("div");
+    // ============ 9. “思考中”指示器 ============
+    let typingRow = null;
+    function showTyping() {
+      if (typingRow) return;
+      typingRow = document.createElement("div");
       typingRow.className = "thinking-row";
-      typingRow.innerHTML = '<span class="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>';
+      typingRow.innerHTML =
+        '<div class="bc-avatar" aria-hidden="true">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1-.9-3.8A8.38 8.38 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01"/></svg>' +
+        '</div>' +
+        '<span class="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>';
       chat.appendChild(typingRow);
       chat.scrollTop = chat.scrollHeight;
+    }
+    function hideTyping() {
+      if (typingRow && typingRow.parentNode) typingRow.remove();
+      typingRow = null;
+    }
 
-      // 流式过程中要填充的 AI 卡片（收到首个 delta 时才创建）
+    // ============ 10. 核心：发送问题 -> 后端 SSE 流 -> 逐字渲染 ============
+    let isStreaming = false;
+    async function ask(rawQuery) {
+      if (isStreaming) return;
+      const query = (rawQuery != null ? rawQuery : input.value).trim();
+      if (!query) return;
+      const isDeep = modelSelect.value === "deep";
+
+      addMessage("user", query);
+      if (rawQuery == null) input.value = "";
+      syncSendState();
+      isStreaming = true;
+      showTyping();
+      pushRecent(query);   // 存到最近
+
+      // 流式过程中要填充的 AI 卡片
       let botCard = null, botMsgEl = null, acc = "";
 
-      // 处理后端推来的每个 SSE 事件
       function handleEvent(evt) {
         if (evt.type === "sub_queries") {
-          if (typingRow.parentNode) typingRow.remove();   // 思维链优先于空思考行
+          hideTyping();
           addSubQueries(evt.data);
         } else if (evt.type === "delta") {
-          if (typingRow.parentNode) typingRow.remove();
-          if (!botCard) {                                  // 首个 delta：创建 AI 卡片
-            botCard = addMessage("bot", "");
-            botMsgEl = botCard.querySelector(".bc-msg");
-          }
+          hideTyping();
+          if (!botCard) { botCard = addMessage("bot", "", isDeep); botMsgEl = botCard.querySelector(".bc-msg"); }
           acc += evt.data;
-          botMsgEl.innerHTML = renderMarkdown(acc);        // 逐字累积渲染
+          botMsgEl.innerHTML = renderMarkdown(acc);
           chat.scrollTop = chat.scrollHeight;
         } else if (evt.type === "sources") {
           addSources(evt.data);
         } else if (evt.type === "error") {
-          if (typingRow.parentNode) typingRow.remove();
-          if (!botCard) { botCard = addMessage("bot", ""); botMsgEl = botCard.querySelector(".bc-msg"); }
-          botMsgEl.innerHTML = "请求失败：" + escapeHtml(evt.data)
-            + "<br>请检查：后端是否已启动？设置里的地址与 API Key 是否正确？";
+          hideTyping();
+          if (!botCard) { botCard = addMessage("bot", "", isDeep); botMsgEl = botCard.querySelector(".bc-msg"); }
+          botMsgEl.innerHTML = "请求失败：" + escapeHtml(evt.data) + "<br>请检查：后端是否已启动？设置里的地址与 API Key 是否正确？";
         }
       }
 
@@ -509,23 +801,18 @@
         const base = (apiBaseInput.value.trim() || window.location.origin).replace(/\/$/, "");
         const res = await fetch(base + "/chat", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-API-Key": apiKeyInput.value.trim(),
-          },
-          body: JSON.stringify({ query, deep: deepToggle.checked }),
+          headers: { "Content-Type": "application/json", "X-API-Key": apiKeyInput.value.trim() },
+          body: JSON.stringify({ query, deep: isDeep }),
         });
         if (!res.ok) {
-          // 连接阶段就失败（如 429 限流、401 鉴权）：直接解析错误
           let detail = "HTTP " + res.status;
           try { const e = await res.json(); if (e && e.detail) detail = "HTTP " + res.status + "：" + e.detail; } catch (_) {}
-          if (typingRow.parentNode) typingRow.remove();
-          if (!botCard) { botCard = addMessage("bot", ""); botMsgEl = botCard.querySelector(".bc-msg"); }
+          hideTyping();
+          if (!botCard) { botCard = addMessage("bot", "", isDeep); botMsgEl = botCard.querySelector(".bc-msg"); }
           botMsgEl.innerHTML = "请求失败：" + escapeHtml(detail);
           return;
         }
-
-        // 读取流式响应：按 SSE 的 `data: {json}\n\n` 分帧解析
+        // 解析 SSE 流
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buf = "";
@@ -534,7 +821,6 @@
           if (done) break;
           buf += decoder.decode(value, { stream: true });
           let idx;
-          // 每遇到空行分隔符就取出一帧（可能含多个 data: 行）
           while ((idx = buf.indexOf("\n\n")) !== -1) {
             const frame = buf.slice(0, idx);
             buf = buf.slice(idx + 2);
@@ -543,27 +829,52 @@
               if (!t.startsWith("data:")) continue;
               const payload = t.slice(5).trim();
               if (!payload) continue;
-              try { handleEvent(JSON.parse(payload)); } catch (_) { /* 忽略无法解析的行 */ }
+              try { handleEvent(JSON.parse(payload)); } catch (_) {}
             }
           }
         }
       } catch (err) {
-        if (typingRow.parentNode) typingRow.remove();
-        if (!botCard) { botCard = addMessage("bot", ""); botMsgEl = botCard.querySelector(".bc-msg"); }
+        hideTyping();
+        if (!botCard) { botCard = addMessage("bot", "", isDeep); botMsgEl = botCard.querySelector(".bc-msg"); }
         botMsgEl.innerHTML = "请求失败：" + escapeHtml(err.message)
           + "<br>请检查：后端是否已启动？设置里的地址与 API Key 是否正确？";
       } finally {
-        sendBtn.disabled = false;
-        chat.scrollTop = chat.scrollHeight;
+        isStreaming = false;
+        hideTyping();
+        syncSendState();
         input.focus();
+        // 移动端：发完收起抽屉
+        if (window.innerWidth <= 768) app.classList.remove("mobile-open");
       }
     }
 
-    // ============ 10. 绑定事件 ============
+    // ============ 11. 新聊天：清空消息，回到欢迎页 ============
+    function startNewChat() {
+      if (isStreaming) return;
+      chat.innerHTML = "";
+      chat.classList.remove("has-messages");
+      // 重新插入欢迎页
+      const w = document.createElement("div");
+      w.className = "welcome"; w.id = "welcome";
+      w.innerHTML = '<h1 class="welcome-title">我们先从哪里开始呢？</h1>'
+        + '<p class="welcome-subtitle">基于 RAG 的个人知识库 · 问我关于经历、技能、项目的一切；开启「深度研究」可让多智能体拆解后综合回答</p>';
+      chat.appendChild(w);
+      input.focus();
+    }
+    newChatBtn.addEventListener("click", startNewChat);
+
+    // ============ 12. 绑定事件 ============
+    sendBtn.addEventListener("click", () => ask());
+    // 建议卡（"生成图片" 是 disabled，不会触发）
+    document.querySelectorAll(".suggestion-card:not(:disabled)").forEach(btn => {
+      btn.addEventListener("click", () => ask(btn.getAttribute("data-q")));
+    });
+    // 已置顶项
+    document.querySelectorAll(".pinned-item").forEach(btn => {
+      btn.addEventListener("click", () => ask(btn.getAttribute("data-q")));
+    });
+    // 表单提交兜底（如果浏览器把 enter 路由到这里）
     form.addEventListener("submit", (e) => { e.preventDefault(); ask(); });
-    clearBtn.addEventListener("click", () => { chat.innerHTML = ""; addMessage("bot", WELCOME); });
-    document.querySelectorAll(".chip").forEach(chip =>
-      chip.addEventListener("click", () => ask(chip.textContent)));
     input.focus();
   </script>
 </body>
