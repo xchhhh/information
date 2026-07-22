@@ -96,6 +96,10 @@ curl -s http://127.0.0.1:8000/health
 
 ## 5. 验证命令
 
+> ⚠️ **`/chat` 自 commit `da9f402` 起改为 SSE 流式接口**（`Content-Type: text/event-stream`），不再是整段 JSON。
+> 响应由多个 `data: {json}\n\n` 帧组成，事件类型：`sub_queries`（思维链）、`delta`（答案增量片段）、`sources`（来源列表）、`error`（异常）。
+> `curl` 验证请加 `-N`（禁用输出缓冲）才能看到逐字推送效果；浏览器前端用 `fetch` + `ReadableStream` 实时渲染。
+
 **① 健康检查（确认版本）**
 ```bash
 curl -s http://127.0.0.1:8000/health
@@ -104,7 +108,7 @@ curl -s http://127.0.0.1:8000/health
 
 **② 单链路问答（基础 RAG）**
 ```bash
-curl -s -X POST http://127.0.0.1:8000/chat \
+curl -N -s -X POST http://127.0.0.1:8000/chat \
   -H "Content-Type: application/json" \
   -H "X-API-Key: change_me" \
   -d '{"query":"你的技术栈是什么？","deep":false}'
@@ -112,15 +116,16 @@ curl -s -X POST http://127.0.0.1:8000/chat \
 
 **③ 深度研究（多智能体 Orchestrator）**
 ```bash
-curl -s -X POST http://127.0.0.1:8000/chat \
+curl -N -s -X POST http://127.0.0.1:8000/chat \
   -H "Content-Type: application/json" \
   -H "X-API-Key: change_me" \
   -d '{"query":"介绍你整个项目","deep":true}'
 ```
-期望返回含三个字段：
-- `sub_queries`：Planner 拆出的子问题列表（思维链数据源）
-- `answer`：Synthesizer 汇总后的答案，带 `[来源：<文件名>]` 引用
-- `sources`：合并去重后的源文件路径列表
+返回的是**流式帧序列**（不再是单个 JSON 对象），依次为：
+- `{"type":"sub_queries","data":[...]}`：Planner 拆出的子问题列表（思维链数据源，深度模式才有）
+- 多个 `{"type":"delta","data":"..."}`：答案增量片段，前端逐字拼接即"边想边出字"
+- `{"type":"sources","data":[...]}`：合并去重后的源文件路径列表
+- `{"type":"error","data":"..."}`：异常时推送（流式已开始，无法再改 HTTP 状态码，故用事件通知）
 
 > 深度模式要跑「Planner → 并行子 Agent 检索生成 → Synthesizer 汇总」，会调多次 LLM，**耗时约 10–30 秒**，curl 等待属正常。
 
