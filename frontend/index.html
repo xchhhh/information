@@ -35,6 +35,7 @@
       --radius-sm: 8px;
       --radius-pill: 28px;          /* 输入胶囊圆角 */
       --sidebar-w: 260px;
+      --content-w: 880px;          /* 主内容列宽：对话气泡/输入胶囊/建议卡/来源标签统一此值，避免大屏两侧留白过大 */
       --ease: cubic-bezier(0.16, 1, 0.3, 1);
     }
 
@@ -218,15 +219,15 @@
       letter-spacing: -.3px;
     }
     .welcome-subtitle {
-      font-size: 14.5px; color: var(--text-dim);
-      max-width: 480px; line-height: 1.6;
+      font-size: 15.5px; color: var(--text-dim);
+      max-width: 520px; line-height: 1.65;
     }
     .messages-container.has-messages .welcome { display: none; }
 
     /* 对话卡片：左 AI / 右 用户（与 ChatGPT 一致） */
     .bubble-card {
       display: flex; gap: 14px; align-items: flex-start;
-      max-width: 768px; width: 100%;
+      max-width: var(--content-w); width: 100%;
       margin: 0 auto; padding: 14px 20px;
       animation: msg-in .3s var(--ease) both;
     }
@@ -255,7 +256,7 @@
       border: 1px solid var(--border);
     }
     .bc-msg {
-      line-height: 1.75; font-size: 15px;
+      line-height: 1.8; font-size: 16px;
       white-space: pre-wrap; word-break: break-word;
     }
     .bubble-card.bot .bc-msg { color: var(--ink); }
@@ -268,7 +269,7 @@
     /* “思考中”行：左侧三个跳动圆点 */
     .thinking-row {
       display: flex; gap: 14px; align-items: flex-start;
-      max-width: 768px; width: 100%;
+      max-width: var(--content-w); width: 100%;
       margin: 0 auto; padding: 14px 20px;
     }
     .thinking-row .bc-avatar { background: var(--accent); color: var(--accent-ink); }
@@ -282,7 +283,7 @@
 
     /* 来源 / 思维链 缩进对齐 AI 正文 */
     .sources, .sub-queries {
-      max-width: 768px; width: 100%;
+      max-width: var(--content-w); width: 100%;
       margin: 2px auto 0; padding: 0 20px 0 74px;
       font-size: 12px; color: var(--text-dim);
       animation: msg-in .3s var(--ease) both;
@@ -307,7 +308,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius-pill);
       padding: 6px 6px 6px 12px;
-      max-width: 768px; width: 100%;
+      max-width: var(--content-w); width: 100%;
       box-shadow: var(--shadow);
       transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
     }
@@ -319,7 +320,7 @@
     .input-pill .icon-btn svg { width: 18px; height: 18px; }
     .input-pill input {
       flex: 1; border: none; background: transparent;
-      color: var(--ink); font-size: 15px; outline: none;
+      color: var(--ink); font-size: 16px; outline: none;
       padding: 8px 8px; min-width: 0;
     }
     .input-pill input::placeholder { color: var(--text-faint); }
@@ -348,7 +349,7 @@
     /* 建议卡（欢迎页时显示） */
     .suggestions {
       display: flex; gap: 10px;
-      max-width: 768px; width: 100%;
+      max-width: var(--content-w); width: 100%;
       animation: fadeIn .5s var(--ease) .1s both;
     }
     .messages-container.has-messages ~ .input-area .suggestions { display: none; }
@@ -357,7 +358,7 @@
       padding: 13px 16px;
       background: var(--surface);
       border: 1px solid var(--border); border-radius: var(--radius);
-      color: var(--ink); font-size: 13.5px;
+      color: var(--ink); font-size: 14px;
       cursor: pointer; transition: all .15s var(--ease);
       text-align: left; min-width: 0;
     }
@@ -438,6 +439,10 @@
 
     /* ============ 无障碍 ============ */
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    /* 大屏（≥1280px）继续放大列宽，充分利用横向空间 */
+    @media (min-width: 1280px) {
+      :root { --content-w: 960px; }
+    }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
     }
