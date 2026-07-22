@@ -6,7 +6,7 @@ import asyncio
 import json
 import re
 from llm.client import get_llm             # 构造 DeepSeek 客户端
-from rag import answer as single_answer    # 复用现有单链路（缓存->改写->检索->重排->生成）
+from rag import answer as single_answer, stream_answer as stream_single_answer  # 复用现有单链路（含流式版）
 from common.config import settings         # 读 orchestrator 配置
 
 
@@ -119,3 +119,57 @@ async def orchestrate(query):
         "sources": sources,
         "sub_queries": subs,      # 透传给前端，可展示“已拆为 N 个子问题”的思维链
     }
+
+
+async def stream_orchestrate(query):
+    # 流式版编排：供 /chat 的 SSE 接口调用。
+    # 流程：Planner 拆解（整段）-> 先发 sub_queries 思维链 -> 并行子 Agent（整段）-> Synthesizer 流式汇总。
+    cfg = settings.get("orchestrator", {})
+    max_n = cfg.get("max_sub_queries", 3)
+    timeout = cfg.get("timeout", 30)
+
+    subs = await asyncio.to_thread(planner_decompose, query, max_n)
+    if not subs:
+        # 拆解失败或 LLM 认为无需拆解 -> 退回单链路流式
+        async for c in stream_single_answer(query):
+            yield c
+        return
+
+    # 先把拆解出的子问题发给前端（思维链可视化，用户能看到“正在分而治之”）
+    yield {"type": "sub_queries", "data": subs}
+
+    # 并行跑每个子问题：复用单链路 answer()（含改写+混合检索+重排+生成），整段返回供汇总
+    async def run_one(sub):
+        try:
+            return await asyncio.wait_for(
+                asyncio.to_thread(single_answer, sub),
+                timeout=timeout,
+            )
+        except Exception:
+            return None   # 单个子问题失败不影响其他子问题
+
+    results = await asyncio.gather(*[run_one(s) for s in subs])
+    valid = [(s, r) for s, r in zip(subs, results) if r is not None]
+
+    if not valid:
+        # 所有子问题都失败 -> 退回单链路流式
+        async for c in stream_single_answer(query):
+            yield c
+        return
+
+    # 汇总阶段：子答案先收集，Synthesizer 用流式输出最终答案（用户能看到逐字汇总）
+    sub_qa = [(s, r["answer"]) for s, r in valid]
+    sources = []
+    for _, r in valid:
+        for src in r.get("sources", []):
+            if src and src not in sources:
+                sources.append(src)
+
+    llm = get_llm(temperature=0)
+    full = []
+    async for chunk in llm.astream(_synthesize_prompt(query, sub_qa)):
+        tok = chunk.content if hasattr(chunk, "content") else str(chunk)
+        if tok:
+            full.append(tok)
+            yield {"type": "delta", "data": tok}
+    yield {"type": "sources", "data": sources}

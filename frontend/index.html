@@ -9,482 +9,309 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <!-- viewport-fit=cover：适配刘海屏，安全区不被遮挡 -->
   <meta name="description" content="许成合的个人 AI 助手，基于 RAG 检索增强生成，可回答关于其经历、技能与项目的问题" />
-  <!-- description：页面描述，利于 SEO 与分享卡片 -->
   <meta name="color-scheme" content="light dark" />
   <!-- 声明同时支持浅色/深色，浏览器按 data-theme 渲染 -->
   <title>许成合 · 个人 AI 助手</title>
-  <!-- 浏览器标签页标题 -->
 
   <style>
-    /* ============ 设计令牌（Design Tokens）：浅色主题默认值 ============ */
+    /* ============ 设计令牌（Design Tokens）：默认深色（贴近 DeepSeek 的克制深色） ============ */
     :root {
-      --accent: #0f766e;            /* 主色：青绿 teal，克制不刺眼 */
-      --accent-strong: #115e59;     /* 主色加深：hover 态 */
-      --accent-2: #0ea5e9;         /* 辅助渐变色：天蓝，用于极光 */
-      --accent-soft: #e6f4f1;      /* 主色浅版：AI 气泡/成功背景 */
-      --user-1: #64748b;           /* 用户头像渐变起色（中性蓝灰，与 AI 主色区分） */
-      --user-2: #475569;           /* 用户头像渐变止色 */
-      --bg-1: #eef4f5;             /* 背景渐变起色 */
-      --bg-2: #f6f9fa;             /* 背景渐变止色 */
-      --surface: rgba(255, 255, 255, .72);  /* 玻璃面：半透明白，叠在极光上有磨砂感 */
-      --surface-solid: #ffffff;      /* 实心面：输入框/设置区 */
-      --ink: #0e2a2c;              /* 主文字：深青墨，比纯黑更高级 */
-      --text-dim: #5d6f71;         /* 次要文字：中灰绿 */
-      --border: rgba(15, 118, 110, .14);    /* 主题色描边，比灰边更统一 */
-      --border-soft: rgba(15, 118, 110, .08);
-      --shadow-sm: 0 2px 10px -4px rgba(15, 118, 110, .25);  /* 轻阴影 */
-      --shadow: 0 18px 44px -22px rgba(15, 118, 110, .4);    /* 主阴影：柔和扩散 */
-      --radius: 18px;              /* 统一大圆角 */
-      --radius-sm: 12px;           /* 小圆角 */
-      --ease: cubic-bezier(0.16, 1, 0.3, 1); /* 平滑减速缓动，用于入场/交互 */
+      --accent: #4D6BFE;            /* 主色：DeepSeek 蓝紫，克制专业 */
+      --accent-strong: #3b5bdb;     /* 主色加深：hover 态 */
+      --bg: #0d0d0d;                /* 页面背景：近黑 */
+      --surface: #161616;           /* 卡片 / 输入区 / 顶栏：深灰 */
+      --surface-2: #242424;         /* 用户气泡 / 次级面 */
+      --ink: #ececec;               /* 主文字：浅灰白 */
+      --text-dim: #8a8a8a;          /* 次要文字：中灰 */
+      --border: #2a2a2a;            /* 边框：深灰描边，比主题色更统一 */
+      --border-soft: #222222;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.4);
+      --shadow: 0 8px 24px -12px rgba(0,0,0,.6);
+      --radius: 16px;               /* 统一大圆角 */
+      --radius-sm: 10px;            /* 小圆角 */
+      --ease: cubic-bezier(0.16, 1, 0.3, 1); /* 平滑减速缓动 */
     }
 
-    /* ============ 深色主题令牌（data-theme="dark" 时生效） ============ */
-    :root[data-theme="dark"] {
-      --accent: #2dd4bf;
-      --accent-strong: #14b8a6;
-      --accent-2: #38bdf8;
-      --accent-soft: rgba(45, 212, 191, .14);
-      --user-1: #94a3b8;
-      --user-2: #64748b;
-      --bg-1: #06161a;
-      --bg-2: #0a2024;
-      --surface: rgba(17, 34, 37, .66);
-      --surface-solid: #0f2124;
-      --ink: #e7f5f2;
-      --text-dim: #8aa4a1;
-      --border: rgba(45, 212, 191, .18);
-      --border-soft: rgba(45, 212, 191, .1);
-      --shadow-sm: 0 2px 12px -4px rgba(0, 0, 0, .6);
-      --shadow: 0 22px 50px -24px rgba(0, 0, 0, .75);
+    /* ============ 浅色主题令牌（data-theme="light" 时生效） ============ */
+    :root[data-theme="light"] {
+      --bg: #ffffff;
+      --surface: #f7f7f8;
+      --surface-2: #eff0f1;
+      --ink: #1a1a1a;
+      --text-dim: #6b6b6b;
+      --border: #e5e5e7;
+      --border-soft: #ededf0;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+      --shadow: 0 8px 24px -12px rgba(0,0,0,.12);
     }
-    /* 跟随系统且系统为深色时，套用同一套深色令牌（仅当 data-theme="system"） */
+    /* 跟随系统且系统为深色时，套用同一套深色令牌 */
     @media (prefers-color-scheme: dark) {
       :root[data-theme="system"] {
-        --accent: #2dd4bf;
-        --accent-strong: #14b8a6;
-        --accent-2: #38bdf8;
-        --accent-soft: rgba(45, 212, 191, .14);
-        --user-1: #94a3b8;
-        --user-2: #64748b;
-        --bg-1: #06161a;
-        --bg-2: #0a2024;
-        --surface: rgba(17, 34, 37, .66);
-        --surface-solid: #0f2124;
-        --ink: #e7f5f2;
-        --text-dim: #8aa4a1;
-        --border: rgba(45, 212, 191, .18);
-        --border-soft: rgba(45, 212, 191, .1);
-        --shadow-sm: 0 2px 12px -4px rgba(0, 0, 0, .6);
-        --shadow: 0 22px 50px -24px rgba(0, 0, 0, .75);
+        --bg: #0d0d0d; --surface: #161616; --surface-2: #242424;
+        --ink: #ececec; --text-dim: #8a8a8a; --border: #2a2a2a; --border-soft: #222222;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,.4); --shadow: 0 8px 24px -12px rgba(0,0,0,.6);
       }
     }
 
-    /* 清零默认边距，统一盒模型（宽高包含 padding，布局更好算） */
+    /* 清零默认边距，统一盒模型 */
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    /* 页面整体：浅色/深色渐变底、纵向弹性布局、占满视口高度（dvh 适配移动端） */
+    /* 页面整体：纯色底、纵向弹性布局、占满视口高度 */
     body {
-      font-family: "Segoe UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
-      background: linear-gradient(160deg, var(--bg-1), var(--bg-2));
+      font-family: "Inter", "Segoe UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
       color: var(--ink);
-      min-height: 100dvh;          /* 用 dvh 而非 vh，移动端更稳 */
-      display: flex;               /* 弹性布局 */
-      flex-direction: column;      /* 子元素从上到下排列 */
-      -webkit-font-smoothing: antialiased; /* 字体抗锯齿，更清晰 */
-      overflow-x: hidden;          /* 极光溢出时不出现横向滚动条 */
-      transition: background-color .4s var(--ease), color .4s var(--ease);
-      /* 主题切换时背景/文字颜色平滑过渡，不闪白不闪黑 */
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color .3s var(--ease), color .3s var(--ease);
     }
 
-    /* 极光背景：固定层，放在内容之下；用 color-mix 让光晕颜色跟随主题主色 */
-    body::before {
-      content: "";
-      position: fixed;
-      inset: -25%;                /* 比视口大一圈，动画平移时不露边 */
-      z-index: -1;                /* 永远在内容下层 */
-      pointer-events: none;       /* 不挡点击 */
-      background:
-        radial-gradient(38% 32% at 18% 18%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 62%),
-        radial-gradient(34% 30% at 84% 12%, color-mix(in srgb, var(--accent-2) 18%, transparent), transparent 62%),
-        radial-gradient(42% 38% at 72% 88%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%);
-      filter: blur(24px);         /* 柔化光晕边缘 */
-      animation: aurora 20s ease-in-out infinite alternate; /* 缓慢漂移 */
-    }
-    @keyframes aurora {
-      from { transform: translate3d(0, 0, 0) scale(1); }
-      to   { transform: translate3d(-3%, 2%, 0) scale(1.08); }
-    }
-
-    /* ============ 顶部：个人名片头部（头像 + 姓名 + 标语，玻璃质感 + 品牌渐变） ============ */
+    /* ============ 顶部：极简标题栏（纯色 + 底部细线，去掉渐变/极光） ============ */
     header {
-      position: relative;          /* 为内部按钮绝对定位提供参照 */
-      background: linear-gradient(135deg, #0f766e, #0d9488); /* 品牌渐变，深浅主题保持一致 */
-      color: #fff;                 /* 白字 */
-      padding: 24px 20px;          /* 内边距 */
-      border-bottom: 1px solid var(--border-soft);
-      overflow: hidden;
+      position: relative;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
     }
-    /* 顶部高光：一条极淡的亮线，让头部更通透 */
-    header::after {
-      content: "";
-      position: absolute; inset: 0 0 auto 0; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .5), transparent);
-    }
-    /* 名片布局：头像在左，文字信息在右 */
     .profile {
-      display: flex; align-items: center; gap: 16px;  /* 头像与信息横向排列 */
-      max-width: 820px; margin: 0 auto;              /* 与主体同宽居中 */
-      text-align: left;                              /* 文字左对齐，更像名片 */
+      display: flex; align-items: center; gap: 12px;
+      max-width: 800px; margin: 0 auto; text-align: left;
     }
-    /* 大头像（app icon 风格：圆角方块 + 浅色底 + 主色 Logo） */
-    .avatar-lg {
-      width: 62px; height: 62px; flex: 0 0 auto;     /* 固定尺寸，不被压缩 */
-      border-radius: 18px;                           /* 圆角方块，比正圆更现代 */
-      background: linear-gradient(135deg, #ffffff, #d9f5ef); /* 浅色底，在 teal 头上形成对比 */
-      color: var(--accent);                          /* Logo 用主色，深浅主题都适配 */
-      display: grid; place-items: center;            /* Logo 居中 */
-      box-shadow: 0 10px 26px -10px rgba(0, 0, 0, .5); /* 浮起阴影 */
-      animation: float 5s ease-in-out infinite;      /* 轻微上下浮动，更有生气 */
+    /* 小 Logo：圆角方块 + 主色描边，克制不浮夸 */
+    .avatar-sm {
+      width: 38px; height: 38px; flex: 0 0 auto; border-radius: 10px;
+      background: var(--surface-2); color: var(--accent);
+      display: grid; place-items: center; border: 1px solid var(--border);
     }
-    .avatar-lg svg { width: 36px; height: 36px; }     /* Logo 图标大小 */
-    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-    /* 名片右侧文字信息 */
-    .profile-meta h1 {
-      font-size: 21px; letter-spacing: .4px; font-weight: 700; line-height: 1.2;
-      /* 标题用白→淡青的渐变文字，比纯白更有层次 */
-      background: linear-gradient(90deg, #ffffff, #d9f5ef);
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-    }
-    .profile-meta .role { font-size: 13px; opacity: .95; margin-top: 3px; font-weight: 500; }
-    .profile-meta .tagline { font-size: 12px; opacity: .85; margin-top: 4px; }
+    .avatar-sm svg { width: 22px; height: 22px; }
+    .profile-meta h1 { font-size: 16px; font-weight: 650; letter-spacing: .2px; }
+    .profile-meta .role { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
     .profile-meta .admin-link {
-      display: inline-block; margin-top: 7px; font-size: 12px;
-      color: rgba(255, 255, 255, .9); text-decoration: none;
-      border-bottom: 1px dashed rgba(255, 255, 255, .55); /* 虚线下划，提示可点 */
-      transition: color .18s var(--ease), border-color .18s var(--ease);
+      display: inline-block; margin-top: 4px; font-size: 12px;
+      color: var(--accent); text-decoration: none;
+      border-bottom: 1px dashed var(--border);
+      transition: border-color .18s var(--ease);
     }
-    .profile-meta .admin-link:hover { color: #fff; border-bottom-color: #fff; }
+    .profile-meta .admin-link:hover { border-bottom-color: var(--accent); }
 
-    /* 主题切换按钮：左上角，圆形玻璃，hover 轻微旋转 */
-    .theme-toggle {
-      position: absolute; top: 14px; left: 14px;
-      width: 38px; height: 38px; border-radius: 50%;
-      display: grid; place-items: center; /* 图标居中 */
-      background: rgba(255, 255, 255, .16);
-      border: 1px solid rgba(255, 255, 255, .35);
-      color: #fff; cursor: pointer; backdrop-filter: blur(6px);
-      transition: background .2s var(--ease), transform .25s var(--ease);
-      z-index: 2;
+    /* 右侧操作按钮（主题切换 + 清空）：简洁圆形/胶囊，玻璃拟态去掉 */
+    .header-actions { position: absolute; top: 12px; right: 16px; display: flex; gap: 8px; }
+    .icon-btn {
+      width: 34px; height: 34px; border-radius: 9px;
+      display: grid; place-items: center; cursor: pointer;
+      background: var(--surface-2); color: var(--ink);
+      border: 1px solid var(--border);
+      transition: background .18s var(--ease), transform .18s var(--ease);
     }
-    .theme-toggle:hover { background: rgba(255, 255, 255, .3); transform: rotate(15deg); }
-    .theme-toggle svg { width: 18px; height: 18px; }
-
-    /* 头部右上角的“清空对话”按钮（玻璃幽灵风格，不抢眼） */
+    .icon-btn:hover { background: var(--border); }
+    .icon-btn:active { transform: scale(.94); }
+    .icon-btn svg { width: 17px; height: 17px; }
     .clear-btn {
-      position: absolute;          /* 绝对定位到右上角 */
-      top: 14px; right: 14px;
-      background: rgba(255, 255, 255, .16); /* 半透明白底 */
-      color: #fff;                 /* 白字 */
-      border: 1px solid rgba(255, 255, 255, .35); /* 半透明描边 */
-      border-radius: 999px;        /* 胶囊形 */
-      padding: 5px 13px;           /* 内边距 */
-      font-size: 12px;             /* 小字 */
-      cursor: pointer;             /* 手型 */
-      backdrop-filter: blur(6px);
-      transition: background .18s var(--ease), transform .18s var(--ease); /* 背景/位移过渡 */
-      z-index: 2;
+      height: 34px; padding: 0 12px; border-radius: 9px; cursor: pointer;
+      background: var(--surface-2); color: var(--ink);
+      border: 1px solid var(--border); font-size: 12.5px;
+      transition: background .18s var(--ease);
     }
-    .clear-btn:hover { background: rgba(255, 255, 255, .3); }
-    .clear-btn:active { transform: scale(.94); } /* 按下轻微回缩 */
+    .clear-btn:hover { background: var(--border); }
 
     /* ============ 中部：聊天消息滚动区 ============ */
     #chat {
-      flex: 1;                     /* 占据头部与输入区之外的全部高度 */
-      overflow-y: auto;            /* 内容超出时可滚动 */
-      padding: 22px 20px;         /* 内边距 */
-      display: flex;               /* 弹性布局 */
-      flex-direction: column;      /* 消息自上而下排 */
-      gap: 16px;                  /* 卡片间距 */
-      max-width: 820px;           /* 限制最大宽度，阅读更舒服 */
-      width: 100%;                /* 宽度撑满（受 max-width 约束） */
-      margin: 0 auto;             /* 水平居中 */
-      scroll-behavior: smooth;     /* 滚动平滑（尊重 reduced-motion 时会关闭） */
-      position: relative; z-index: 1; /* 确保在极光层之上 */
+      flex: 1; overflow-y: auto; padding: 22px 20px;
+      display: flex; flex-direction: column; gap: 16px;
+      max-width: 800px; width: 100%; margin: 0 auto;
+      scroll-behavior: smooth; position: relative; z-index: 1;
     }
-    /* 自定义滚动条（webkit）：细、圆角、hover 显主色 */
     #chat::-webkit-scrollbar { width: 8px; }
     #chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
-    #chat::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+    #chat::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
 
-    /* ============ 卡片式对话：每条消息 = 小头像 + 名字/时间 + 气泡 ============ */
+    /* ============ 对话卡片：AI 靠左无气泡（纯文本），用户靠右浅块 ============ */
     .bubble-card {
-      display: flex; gap: 10px; align-items: flex-start;
-      max-width: 88%;              /* 整张卡片最宽 88%，留出层次 */
-      animation: msg-in .32s var(--ease) both; /* 入场动画：淡入+上移 */
+      display: flex; gap: 12px; align-items: flex-start;
+      max-width: 92%;
+      animation: msg-in .3s var(--ease) both;
     }
-    .bubble-card.user { align-self: flex-end; flex-direction: row-reverse; } /* 用户消息靠右镜像 */
-    /* 小头像：圆形，AI 用主色渐变 + Logo，用户用中性蓝灰 + “我” */
+    .bubble-card.user { align-self: flex-end; flex-direction: row-reverse; }
     .bc-avatar {
-      width: 34px; height: 34px; flex: 0 0 auto; border-radius: 50%;
+      width: 30px; height: 30px; flex: 0 0 auto; border-radius: 8px;
       display: grid; place-items: center; color: #fff;
-      font-size: 13px; font-weight: 700; box-shadow: var(--shadow-sm);
+      font-size: 12px; font-weight: 700;
     }
-    .bubble-card.bot  .bc-avatar { background: linear-gradient(135deg, var(--accent), var(--accent-strong)); }
-    .bubble-card.user .bc-avatar { background: linear-gradient(135deg, var(--user-1), var(--user-2)); }
-    .bc-avatar svg { width: 19px; height: 19px; }
-    /* 卡片正文：名字/时间一行 + 气泡 */
-    .bc-body { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+    .bubble-card.bot  .bc-avatar { background: var(--accent); }
+    .bubble-card.user .bc-avatar { background: var(--surface-2); color: var(--ink); border: 1px solid var(--border); }
+    .bc-avatar svg { width: 17px; height: 17px; }
+    .bc-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .bc-head { display: flex; align-items: baseline; gap: 8px; font-size: 11.5px; color: var(--text-dim); }
     .bc-name { font-weight: 600; color: var(--ink); }
-    .bubble-card.user .bc-head { flex-direction: row-reverse; } /* 用户名字也靠右 */
-    /* 气泡本体 */
+    .bubble-card.user .bc-head { flex-direction: row-reverse; }
     .bc-msg {
-      padding: 13px 17px;          /* 内边距 */
-      border-radius: var(--radius);/* 圆角 */
-      line-height: 1.75;           /* 行高，长文易读 */
-      font-size: 15px;             /* 字号 */
-      white-space: pre-wrap;       /* 保留换行与空格 */
-      word-break: break-word;      /* 长单词/URL 自动换行，不撑破 */
-      box-shadow: var(--shadow-sm);/* 轻阴影，让气泡浮起来 */
+      padding: 2px 0; line-height: 1.75; font-size: 15px;
+      white-space: pre-wrap; word-break: break-word;
     }
-    /* AI 气泡：靠左、玻璃浅底、深字 */
-    .bubble-card.bot .bc-msg {
-      background: var(--surface);       /* 玻璃面 */
-      backdrop-filter: blur(18px);      /* 磨砂玻璃 */
-      color: var(--ink);               /* 深字 */
-      border: 1px solid var(--border); /* 主题色细边框 */
-      border-bottom-left-radius: 5px;   /* 左下角收窄，形成“尾巴”指向 AI 头像 */
-    }
-    .bubble-card.bot .bc-msg strong { color: var(--accent); } /* AI 回答里的加粗用主色突出 */
-    /* 用户气泡：靠右、主色渐变实底、白字 */
+    /* AI 消息：无背景气泡，纯文本（贴近 DeepSeek 的克制观感） */
+    .bubble-card.bot .bc-msg { color: var(--ink); }
+    .bubble-card.bot .bc-msg strong { color: var(--accent); }
+    /* 用户消息：右对齐浅色块 */
     .bubble-card.user .bc-msg {
-      background: linear-gradient(135deg, var(--accent), var(--accent-strong)); /* 渐变让按钮更有质感 */
-      color: #fff;                     /* 白字 */
-      border-bottom-right-radius: 5px; /* 右下角收窄，指向用户头像 */
-      box-shadow: var(--shadow);
+      background: var(--surface-2); color: var(--ink);
+      padding: 11px 15px; border-radius: var(--radius); border: 1px solid var(--border);
     }
-    /* “思考中”打字指示：三个跳动的小圆点（比纯文字更生动） */
-    .bc-msg.typing-msg { display: inline-flex; align-items: center; padding: 16px 18px; }
+
+    /* “思考中”行：左侧三个跳动圆点 */
+    .thinking-row { align-self: flex-start; display: inline-flex; padding-left: 42px; }
     .typing { display: inline-flex; align-items: center; gap: 5px; }
     .typing .dot {
-      width: 7px; height: 7px; border-radius: 50%; /* 圆点 */
-      background: var(--accent);                    /* 主色 */
-      opacity: .35;                                 /* 默认半透明 */
-      animation: blink 1.2s infinite both;          /* 循环跳动 */
+      width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim);
+      opacity: .4; animation: blink 1.2s infinite both;
     }
-    .typing .dot:nth-child(2) { animation-delay: .2s; } /* 第二个点延迟，形成波浪 */
-    .typing .dot:nth-child(3) { animation-delay: .4s; } /* 第三个点再延迟 */
+    .typing .dot:nth-child(2) { animation-delay: .2s; }
+    .typing .dot:nth-child(3) { animation-delay: .4s; }
     @keyframes blink {
       0%, 80%, 100% { opacity: .3; transform: translateY(0); }
-      40%           { opacity: 1;  transform: translateY(-3px); } /* 上浮+变亮 */
+      40%           { opacity: 1;  transform: translateY(-3px); }
     }
-    /* 单条消息入场关键帧（只动 transform/opacity，GPU 友好） */
     @keyframes msg-in {
-      from { opacity: 0; transform: translateY(12px) scale(.98); }
+      from { opacity: 0; transform: translateY(10px); }
       to   { opacity: 1; transform: none; }
     }
 
-    /* 来源引用区：显示在 AI 卡片下方，左缩进到与气泡正文对齐（头像34+间距10=44） */
+    /* 来源引用区：AI 卡片下方，缩进对齐气泡正文 */
     .sources {
-      align-self: flex-start;          /* 与 AI 卡片同侧 */
-      font-size: 12px;                 /* 小字 */
-      color: var(--text-dim);          /* 灰色 */
-      max-width: 88%;                  /* 与卡片等宽 */
-      margin-left: 44px;               /* 缩进到 AI 气泡正文处 */
-      padding-left: 4px;               /* 略再缩进 */
-      animation: msg-in .32s var(--ease) both; /* 同样带入场动画 */
+      align-self: flex-start; font-size: 12px; color: var(--text-dim);
+      max-width: 92%; margin-left: 42px; padding-left: 2px;
+      animation: msg-in .3s var(--ease) both;
     }
-    .sources b { color: var(--ink); }  /* “来源：”标签加深 */
+    .sources b { color: var(--ink); }
     .src-tag {
-      display: inline-block;           /* 行内块，可设内边距 */
-      background: var(--surface);       /* 玻璃面 */
-      backdrop-filter: blur(10px);
-      border: 1px solid var(--border); /* 主题色边框 */
-      border-radius: 8px;              /* 小圆角 */
-      padding: 3px 9px;               /* 内边距 */
-      margin: 3px 4px 0 0;            /* 标签间距 */
-      color: var(--ink);
+      display: inline-block; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 7px; padding: 3px 9px; margin: 3px 4px 0 0; color: var(--ink);
     }
 
-    /* 深度研究思维链：展示 Orchestrator 拆解出的子问题，风格与来源标签一致 */
+    /* 深度研究思维链：展示 Orchestrator 拆解出的子问题 */
     .sub-queries {
-      align-self: flex-start;
-      font-size: 12px;
-      color: var(--text-dim);
-      max-width: 88%;
-      margin: 4px 0 0 44px;
-      padding-left: 4px;
-      animation: msg-in .32s var(--ease) both;
+      align-self: flex-start; font-size: 12px; color: var(--text-dim);
+      max-width: 92%; margin-left: 42px; padding-left: 2px;
+      animation: msg-in .3s var(--ease) both;
     }
     .sub-queries b { color: var(--ink); }
     .sub-tag {
-      display: inline-block;
-      background: var(--surface);
-      border: 1px dashed var(--border);  /* 虚线边，区别于来源实线 */
-      border-radius: 8px;
-      padding: 3px 9px;
-      margin: 3px 4px 0 0;
-      color: var(--ink);
+      display: inline-block; background: var(--surface); border: 1px dashed var(--border);
+      border-radius: 7px; padding: 3px 9px; margin: 3px 4px 0 0; color: var(--ink);
     }
-    /* 输入栏里的“深度研究”开关 */
     .deep-toggle {
       display: inline-flex; align-items: center; gap: 4px;
       font-size: 12px; color: var(--text-dim); cursor: pointer;
       user-select: none; white-space: nowrap; padding: 0 4px;
     }
-    .deep-toggle input { accent-color: var(--accent, #6366f1); cursor: pointer; }
+    .deep-toggle input { accent-color: var(--accent); cursor: pointer; }
 
-    /* ============ 示例问题 chips（提升首屏可用性，引导用户提问） ============ */
+    /* ============ 示例问题 chips ============ */
     #chips {
-      display: flex; flex-wrap: wrap; gap: 8px;   /* 可换行的小标签行 */
-      justify-content: center;                     /* 居中 */
-      padding: 0 20px 12px;                        /* 左右内边距、底部留白 */
-      max-width: 820px; margin: 0 auto; width: 100%; /* 与主体同宽并居中 */
-      position: relative; z-index: 1;
+      display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+      padding: 0 20px 10px; max-width: 800px; margin: 0 auto; width: 100%;
     }
     .chip {
-      font-size: 12.5px; padding: 8px 14px;       /* 内边距 */
-      border: 1px solid var(--border);             /* 主题色边框 */
-      border-radius: 999px;                        /* 胶囊形 */
-      background: var(--surface);                   /* 玻璃面 */
-      backdrop-filter: blur(12px);
-      color: var(--text-dim);                       /* 灰字 */
-      cursor: pointer;                             /* 手型 */
-      box-shadow: var(--shadow-sm);
-      transition: all .2s var(--ease);            /* 颜色/边框/位移过渡 */
+      font-size: 12.5px; padding: 7px 13px; border: 1px solid var(--border);
+      border-radius: 999px; background: var(--surface); color: var(--text-dim);
+      cursor: pointer; transition: all .18s var(--ease);
     }
-    .chip:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow); } /* hover 上浮+变主色 */
-    .chip:active { transform: translateY(0) scale(.97); }
+    .chip:hover { border-color: var(--accent); color: var(--accent); }
+    .chip:active { transform: scale(.97); }
 
-    /* ============ 底部：输入区（用 <form> 包裹，回车天然可提交） ============ */
+    /* ============ 底部：输入区（圆角容器 + 发送按钮） ============ */
     #inputBar {
-      display: flex; gap: 10px;                    /* 输入框与按钮横向排列 */
-      padding: 12px;                              /* 内边距（整体当成一个玻璃卡片） */
-      margin: 0 auto 16px;                        /* 居中 + 底部离屏边留白 */
-      max-width: 820px; width: calc(100% - 32px); /* 两侧各留 16px */
-      background: var(--surface);                   /* 玻璃面 */
-      backdrop-filter: blur(20px);
-      border: 1px solid var(--border);             /* 主题色边框 */
-      border-radius: var(--radius);                 /* 大圆角，像悬浮胶囊 */
-      box-shadow: var(--shadow);                    /* 主阴影，浮起感 */
-      position: relative; z-index: 1;
+      display: flex; gap: 10px; align-items: center;
+      padding: 10px; margin: 0 auto 16px; max-width: 800px; width: calc(100% - 32px);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow-sm);
     }
     #q {
-      flex: 1; padding: 13px 16px;                /* 输入框占剩余宽度 */
-      border: 1px solid var(--border);             /* 主题色边框 */
-      border-radius: var(--radius-sm);             /* 圆角 */
-      background: var(--surface-solid);              /* 实心面，输入区更聚焦 */
-      color: var(--ink);
-      font-size: 15px;                             /* 字号 */
-      outline: none;                               /* 先去掉默认轮廓，后面用 focus-visible 统一 */
+      flex: 1; padding: 11px 14px; border: none; border-radius: var(--radius-sm);
+      background: transparent; color: var(--ink); font-size: 15px; outline: none;
     }
-    #q:focus { border-color: var(--accent); }      /* 聚焦时边框变主色 */
+    #q::placeholder { color: var(--text-dim); }
     #send {
-      padding: 0 24px; border: none;               /* 去边框 */
-      border-radius: var(--radius-sm);             /* 圆角 */
-      background: linear-gradient(135deg, var(--accent), var(--accent-strong)); /* 主色渐变 */
-      color: #fff; font-size: 15px; cursor: pointer;  /* 字号、手型 */
-      box-shadow: var(--shadow-sm);
-      transition: filter .2s var(--ease), box-shadow .2s var(--ease), transform .12s var(--ease);
+      padding: 0 20px; height: 40px; border: none; border-radius: var(--radius-sm);
+      background: var(--accent); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: filter .18s var(--ease), transform .12s var(--ease);
     }
-    #send:hover:not(:disabled) { filter: brightness(1.06); box-shadow: var(--shadow); } /* hover 微亮 */
-    #send:active:not(:disabled) { transform: scale(.96); }           /* 按下轻微回缩，触觉反馈 */
-    #send:disabled { opacity: .5; cursor: not-allowed; }             /* 禁用态变灰 */
+    #send:hover:not(:disabled) { filter: brightness(1.08); }
+    #send:active:not(:disabled) { transform: scale(.96); }
+    #send:disabled { opacity: .5; cursor: not-allowed; }
 
-    /* ============ 设置区（可折叠，玻璃卡片） ============ */
+    /* ============ 设置区（可折叠） ============ */
     details {
-      max-width: 820px; margin: 0 auto 12px; width: calc(100% - 32px); /* 与主体同宽居中 */
-      background: var(--surface);                   /* 玻璃面 */
-      backdrop-filter: blur(20px);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 4px 16px; box-shadow: var(--shadow-sm);
-      position: relative; z-index: 1;
-      padding-bottom: calc(12px + env(safe-area-inset-bottom)); /* 适配 iPhone 底部安全区 */
+      max-width: 800px; margin: 0 auto 12px; width: calc(100% - 32px);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 2px 16px;
     }
     summary {
       cursor: pointer; font-size: 13px; color: var(--text-dim);
-      padding: 12px 0; user-select: none;            /* 不可选中，更像按钮 */
-      display: flex; align-items: center; gap: 6px;
+      padding: 11px 0; user-select: none; display: flex; align-items: center; gap: 6px;
     }
     summary::before {
       content: ""; width: 6px; height: 6px; border-radius: 50%;
-      background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); /* 小圆点标 */
+      background: var(--accent);
     }
     .settings { display: flex; gap: 10px; flex-wrap: wrap; padding-bottom: 10px; }
     .settings input {
-      flex: 1; min-width: 200px; padding: 10px 12px; /* 平分宽度，窄屏换行 */
-      border: 1px solid var(--border); border-radius: 8px; font-size: 13px;
-      background: var(--surface-solid); color: var(--ink);
+      flex: 1; min-width: 200px; padding: 10px 12px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 13px; background: var(--bg); color: var(--ink);
     }
     .settings input:focus { border-color: var(--accent); outline: none; }
 
-    /* ============ 无障碍：统一的键盘焦点环（用 outline，不被圆角裁剪） ============ */
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-    /* ============ 响应式：窄屏（手机）适配 ============ */
+    /* ============ 响应式：窄屏 ============ */
     @media (max-width: 640px) {
-      header { padding: 20px 14px; }
-      .profile { gap: 12px; }
-      .avatar-lg { width: 52px; height: 52px; border-radius: 15px; }
-      .avatar-lg svg { width: 30px; height: 30px; }
-      .profile-meta h1 { font-size: 18px; }
+      header { padding: 12px 14px; }
+      .profile { gap: 10px; }
+      .avatar-sm { width: 34px; height: 34px; border-radius: 9px; }
+      .profile-meta h1 { font-size: 15px; }
       .profile-meta .role { font-size: 12px; }
-      .profile-meta .tagline { font-size: 11px; }
-      .theme-toggle { top: 12px; left: 12px; width: 34px; height: 34px; }
-      .clear-btn { top: 12px; right: 12px; padding: 4px 11px; }
+      .header-actions { top: 10px; right: 12px; }
       #chat { padding: 16px 14px; gap: 12px; }
-      .bubble-card { max-width: 94%; }
-      .bc-avatar { width: 30px; height: 30px; }
-      .bc-avatar svg { width: 16px; height: 16px; }
-      .bc-msg { font-size: 14px; }
-      .sources { max-width: 94%; margin-left: 40px; }
-      #chips { padding: 0 12px 10px; }
-      #inputBar { padding: 10px; margin-bottom: 12px; width: calc(100% - 24px); }
-      #q { font-size: 14px; padding: 11px 12px; }
-      #send { padding: 0 18px; }
-      details { width: calc(100% - 24px); }
+      .bubble-card { max-width: 96%; }
+      .sources, .sub-queries { max-width: 96%; margin-left: 42px; }
+      #chips { padding: 0 12px 8px; }
+      #inputBar { margin-bottom: 12px; width: calc(100% - 24px); }
     }
 
-    /* ============ 无障碍：尊重“减少动态效果”系统偏好 ============ */
+    /* ============ 无障碍：尊重“减少动态效果” ============ */
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation: none !important;       /* 关闭所有动画 */
-        transition: none !important;      /* 关闭所有过渡 */
-        scroll-behavior: auto !important;  /* 关闭平滑滚动 */
-      }
+      *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
     }
   </style>
 </head>
 
 <body>
-  <!-- 顶部：头像 + 个人名片 + 主题切换 + 清空按钮 -->
+  <!-- 顶部：极简标题栏（Logo + 名字/身份 + 后台入口 + 主题/清空） -->
   <header>
-    <!-- 主题切换：点击在 浅色→深色→跟随系统 之间循环 -->
-    <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换主题">🌗</button>
-
-    <!-- 个人名片：左侧大头像（Logo），右侧姓名/身份/标语/后台入口 -->
     <div class="profile">
-      <div class="avatar-lg" aria-hidden="true">
-        <!-- 聊天气泡 Logo：主色描边，深浅主题跟随 .avatar-lg 的 color -->
+      <div class="avatar-sm" aria-hidden="true">
+        <!-- 聊天气泡 Logo：主色描边 -->
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1-.9-3.8A8.38 8.38 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z"/>
           <path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01"/>
         </svg>
       </div>
       <div class="profile-meta">
-        <h1>许成合</h1>
-        <p class="role">个人 AI 助手 · 全栈开发 / RAG 工程方向</p>
-        <p class="tagline">基于 RAG 检索增强 · 关于我的经历、技能、项目，尽管问</p>
+        <h1>许成合 · 个人 AI 助手</h1>
+        <p class="role">基于 RAG 检索增强 · 关于我的经历、技能、项目，尽管问</p>
         <a href="/admin" class="admin-link" aria-label="打开后台管理页">后台管理 · 检测与上传 →</a>
       </div>
     </div>
-
-    <button id="clear" class="clear-btn" type="button" aria-label="清空当前对话">清空对话</button>
+    <div class="header-actions">
+      <!-- 主题切换：浅色→深色→跟随系统 循环 -->
+      <button id="themeToggle" class="icon-btn" type="button" aria-label="切换主题">🌗</button>
+      <!-- 清空对话 -->
+      <button id="clear" class="clear-btn" type="button" aria-label="清空当前对话">清空</button>
+    </div>
   </header>
 
-  <!-- 聊天消息区：role=log + aria-live，让屏幕阅读器自动朗读新消息 -->
+  <!-- 聊天消息区 -->
   <main id="chat" role="log" aria-live="polite" aria-relevant="additions" aria-label="对话记录">
     <!-- 首条欢迎语（AI 卡片）。清空对话时会重新插入这条。 -->
     <div class="bubble-card bot">
@@ -498,14 +325,14 @@
     </div>
   </main>
 
-  <!-- 示例问题：点击即发送，降低首屏使用门槛 -->
+  <!-- 示例问题 -->
   <nav id="chips" aria-label="示例问题">
     <button class="chip" type="button">你会哪些技术？</button>
     <button class="chip" type="button">做过什么项目？</button>
     <button class="chip" type="button">期望岗位是什么？</button>
   </nav>
 
-  <!-- 底部输入区：用 <form> 包裹，回车与点击按钮都会触发提交（submit） -->
+  <!-- 底部输入区 -->
   <form id="inputBar" aria-label="输入问题">
     <input id="q" type="text" placeholder="输入你的问题，按回车发送…" aria-label="你的问题" autocomplete="off" />
     <label class="deep-toggle" title="开启后由多智能体把问题拆解、并行检索各资料块再汇总，适合“介绍整个项目”这类综合问题">
@@ -514,7 +341,7 @@
     <button id="send" type="submit" aria-label="发送问题">发送</button>
   </form>
 
-  <!-- 可折叠设置区：配置后端地址与 API Key -->
+  <!-- 可折叠设置区 -->
   <details>
     <summary>连接设置（后端地址 / API Key）</summary>
     <div class="settings">
@@ -525,23 +352,20 @@
 
   <script>
     // ============ 0. 主题：light / dark / system 三态切换，持久化到 localStorage ============
-    const themeToggle = document.getElementById("themeToggle"); // 主题切换按钮
-    const THEME_KEY = "theme";                                // localStorage 键名
-    // 三态对应的 SVG 图标（线描风格，比 emoji 更精致统一）
+    const themeToggle = document.getElementById("themeToggle");
+    const THEME_KEY = "theme";
     const THEME_ICONS = {
       light: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
       dark:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
       system:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>'
     };
     const THEME_LABEL = { light: "浅色", dark: "深色", system: "跟随系统" };
-    // 应用主题：把当前模式写入 <html data-theme>，并刷新按钮图标与无障碍标签
     function applyTheme() {
-      const t = localStorage.getItem(THEME_KEY) || "system"; // 默认跟随系统
+      const t = localStorage.getItem(THEME_KEY) || "system";
       document.documentElement.setAttribute("data-theme", t);
       themeToggle.innerHTML = THEME_ICONS[t];
       themeToggle.setAttribute("aria-label", "当前主题：" + THEME_LABEL[t]);
     }
-    // 循环切换：浅色 → 深色 → 跟随系统 → 浅色 …
     function cycleTheme() {
       const order = ["light", "dark", "system"];
       const cur = localStorage.getItem(THEME_KEY) || "system";
@@ -549,64 +373,43 @@
       localStorage.setItem(THEME_KEY, next);
       applyTheme();
     }
-    themeToggle.addEventListener("click", cycleTheme); // 点击切换
-    applyTheme(); // 页面加载即应用已保存的主题
-    // 处于“跟随系统”时，系统主题变化要实时跟随
+    themeToggle.addEventListener("click", cycleTheme);
+    applyTheme();
     matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
       if ((localStorage.getItem(THEME_KEY) || "system") === "system") applyTheme();
     });
 
-    // ============ 0.5 磁吸按钮：光标靠近时按钮轻微跟随，提升触感（仅作用于清空按钮） ============
-    function bindMagnetic(el, strength = 0.25) {
-      if (!el) return;
-      el.addEventListener("mousemove", (e) => {
-        const r = el.getBoundingClientRect();
-        const x = (e.clientX - (r.left + r.width / 2)) * strength;
-        const y = (e.clientY - (r.top + r.height / 2)) * strength;
-        el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
-      });
-      el.addEventListener("mouseleave", () => { el.style.transform = ""; });
-    }
-    bindMagnetic(document.getElementById("clear"), 0.25);
+    // ============ 1. 获取页面元素 ============
+    const chat = document.getElementById("chat");
+    const form = document.getElementById("inputBar");
+    const input = document.getElementById("q");
+    const sendBtn = document.getElementById("send");
+    const clearBtn = document.getElementById("clear");
+    const apiBaseInput = document.getElementById("apiBase");
+    const apiKeyInput = document.getElementById("apiKey");
+    const deepToggle = document.getElementById("deepToggle");
 
-    // ============ 1. 获取页面元素，存成变量方便反复使用 ============
-    const chat = document.getElementById("chat");          // 聊天消息容器
-    const form = document.getElementById("inputBar");       // 输入表单
-    const input = document.getElementById("q");             // 输入框
-    const sendBtn = document.getElementById("send");        // 发送按钮
-    const clearBtn = document.getElementById("clear");      // 清空按钮
-    const apiBaseInput = document.getElementById("apiBase");// 后端地址输入
-    const apiKeyInput = document.getElementById("apiKey");  // API Key 输入
-    const deepToggle = document.getElementById("deepToggle"); // “深度研究”开关（多智能体模式）
-
-    // ============ 2. 读取/初始化配置（存浏览器 localStorage，刷新不丢） ============
-    apiBaseInput.value = localStorage.getItem("apiBase") || "";  // 默认空=同源：部署在同一起后端时不用填地址
+    // ============ 2. 读取/初始化配置 ============
+    apiBaseInput.value = localStorage.getItem("apiBase") || "";
     apiKeyInput.value = localStorage.getItem("apiKey") || "change_me";
-    // 用户修改时实时存回，下次打开自动带出
     apiBaseInput.addEventListener("input", () => localStorage.setItem("apiBase", apiBaseInput.value.trim()));
     apiKeyInput.addEventListener("input", () => localStorage.setItem("apiKey", apiKeyInput.value.trim()));
 
-    // ============ 2.5 头像 / 名字常量（卡片式对话用） ============
-    // AI 头像：聊天气泡 Logo（白色描边，落在主色渐变底上）
+    // ============ 2.5 头像 / 名字常量 ============
     const BOT_AVATAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1-.9-3.8A8.38 8.38 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01"/></svg>';
-    const BOT_NAME = "AI 助手";   // AI 卡片显示名
-    const USER_NAME = "我";       // 用户卡片显示名
-    // 当前时间（时:分），用于消息时间戳
-    function nowTime() {
-      return new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
-    }
+    const BOT_NAME = "AI 助手";
+    const USER_NAME = "我";
+    function nowTime() { return new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }); }
 
-    // ============ 3. 欢迎语原文：清空对话后用于重置首屏 ============
+    // ============ 3. 欢迎语原文 ============
     const WELCOME = "你好，我是许成合的个人 AI 助手。你可以问我：他会哪些技术？做过什么项目？期望的岗位是什么？";
 
-    // ============ 4. 工具函数：在聊天区插入一条“卡片式”消息 ============
-    // role: "user"(用户) 或 "bot"(AI)；text: 消息文本
+    // ============ 4. 工具函数：插入一条消息卡片 ============
     function addMessage(role, text) {
-      const card = document.createElement("div");           // 整张卡片容器
-      card.className = "bubble-card " + role;               // 套用样式类（bot/user 决定左右镜像）
-      const avatar = role === "bot" ? BOT_AVATAR : USER_NAME; // AI 用 Logo，用户用“我”
+      const card = document.createElement("div");
+      card.className = "bubble-card " + role;
+      const avatar = role === "bot" ? BOT_AVATAR : USER_NAME;
       const name = role === "bot" ? BOT_NAME : USER_NAME;
-      // 结构：小头像 +（名字/时间 + 气泡）
       card.innerHTML =
         '<div class="bc-avatar" aria-hidden="true">' + avatar + '</div>' +
         '<div class="bc-body">' +
@@ -614,113 +417,154 @@
             '<span class="bc-time">' + nowTime() + '</span></div>' +
           '<div class="bc-msg">' + (role === "bot" ? renderMarkdown(text) : escapeHtml(text)) + '</div>' +
         '</div>';
-      chat.appendChild(card);                               // 插入末尾
-      chat.scrollTop = chat.scrollHeight;                  // 自动滚到底
-      return card;                                          // 返回元素，便于后续更新（如思考态）
+      chat.appendChild(card);
+      chat.scrollTop = chat.scrollHeight;
+      return card;
     }
 
-    // ============ 5. 工具函数：把来源列表渲染成小标签 ============
+    // ============ 5. 工具函数：渲染来源标签 ============
     function addSources(sources) {
-      if (!sources || sources.length === 0) return;   // 无来源则不显示
-      const unique = [...new Set(sources)];           // 去重：同文件只显示一次
+      if (!sources || sources.length === 0) return;
+      const unique = [...new Set(sources)];
       const div = document.createElement("div");
       div.className = "sources";
-      // 标题 + 每个文件名一个浅色小标签（只取文件名，不露完整路径）
       div.innerHTML = "<b>来源：</b>" + unique
         .map(s => `<span class="src-tag">${escapeHtml(basename(s))}</span>`).join("");
       chat.appendChild(div);
       chat.scrollTop = chat.scrollHeight;
     }
 
-    // ============ 5.5 工具函数：深度研究时展示 Orchestrator 拆解出的子问题（思维链） ============
+    // ============ 5.5 工具函数：深度研究思维链 ============
     function addSubQueries(subs) {
-      if (!subs || !subs.length) return;   // 非深度模式或无拆解则不显示
+      if (!subs || !subs.length) return;
       const div = document.createElement("div");
       div.className = "sub-queries";
-      // 标题 + 每个子问题一个虚线小标签
       div.innerHTML = "<b>深度研究拆分的子问题：</b>" + subs
         .map(s => `<span class="sub-tag">${escapeHtml(s)}</span>`).join("");
       chat.appendChild(div);
       chat.scrollTop = chat.scrollHeight;
     }
 
-    // ============ 6. 工具函数：从完整路径取文件名 ============
+    // ============ 6. 工具函数：取文件名 ============
     function basename(path) { return String(path).split(/[\\/]/).pop(); }
 
-    // ============ 7. 工具函数：转义 HTML，防止回答内容破坏页面结构 ============
+    // ============ 7. 工具函数：转义 HTML ============
     function escapeHtml(str) {
       return String(str)
         .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
-    // ============ 8. 工具函数：简易 markdown -> HTML（仅加粗/列表/换行） ============
+    // ============ 8. 工具函数：简易 markdown -> HTML ============
     function renderMarkdown(text) {
-      let html = escapeHtml(text);                                  // 先转义
-      html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>"); // **x** -> 加粗
-      html = html.replace(/^- (.+)$/gm, "• $1");                    // 行首 "- " -> 圆点
-      return html;                                                  // pre-wrap 已保留换行
+      let html = escapeHtml(text);
+      html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+      html = html.replace(/^- (.+)$/gm, "• $1");
+      return html;
     }
 
-    // ============ 9. 核心：发送问题 -> 后端 -> 渲染答案 ============
+    // ============ 9. 核心：发送问题 -> 后端 SSE 流 -> 逐字渲染 ============
     async function ask(query) {
-      query = (query || input.value).trim();   // 优先用传入文本，否则取输入框
-      if (!query) return;                       // 空问题不发送
+      query = (query || input.value).trim();
+      if (!query) return;
 
-      addMessage("user", query);               // 显示用户问题（卡片式）
-      input.value = "";                         // 清空输入框
-      sendBtn.disabled = true;                  // 禁用按钮，防重复提交
+      addMessage("user", query);     // 显示用户问题
+      input.value = "";
+      sendBtn.disabled = true;
 
-      // 显示“思考中”占位（在 AI 卡片的气泡里放三个跳动圆点），答案回来后替换
-      const thinking = addMessage("bot", "");
-      const msgEl = thinking.querySelector(".bc-msg"); // 取出气泡节点，直接更新它
-      msgEl.classList.add("typing-msg");
-      msgEl.innerHTML = '<span class="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>';
+      // 先显示一个“思考中”行（流式数据到达前给用户反馈）
+      const typingRow = document.createElement("div");
+      typingRow.className = "thinking-row";
+      typingRow.innerHTML = '<span class="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>';
+      chat.appendChild(typingRow);
+      chat.scrollTop = chat.scrollHeight;
+
+      // 流式过程中要填充的 AI 卡片（收到首个 delta 时才创建）
+      let botCard = null, botMsgEl = null, acc = "";
+
+      // 处理后端推来的每个 SSE 事件
+      function handleEvent(evt) {
+        if (evt.type === "sub_queries") {
+          if (typingRow.parentNode) typingRow.remove();   // 思维链优先于空思考行
+          addSubQueries(evt.data);
+        } else if (evt.type === "delta") {
+          if (typingRow.parentNode) typingRow.remove();
+          if (!botCard) {                                  // 首个 delta：创建 AI 卡片
+            botCard = addMessage("bot", "");
+            botMsgEl = botCard.querySelector(".bc-msg");
+          }
+          acc += evt.data;
+          botMsgEl.innerHTML = renderMarkdown(acc);        // 逐字累积渲染
+          chat.scrollTop = chat.scrollHeight;
+        } else if (evt.type === "sources") {
+          addSources(evt.data);
+        } else if (evt.type === "error") {
+          if (typingRow.parentNode) typingRow.remove();
+          if (!botCard) { botCard = addMessage("bot", ""); botMsgEl = botCard.querySelector(".bc-msg"); }
+          botMsgEl.innerHTML = "请求失败：" + escapeHtml(evt.data)
+            + "<br>请检查：后端是否已启动？设置里的地址与 API Key 是否正确？";
+        }
+      }
 
       try {
-        // 组装请求地址：去掉末尾多余的斜杠，再拼 /chat
-        const base = (apiBaseInput.value.trim() || window.location.origin).replace(/\/$/, "");  // 空则用同源地址
+        const base = (apiBaseInput.value.trim() || window.location.origin).replace(/\/$/, "");
         const res = await fetch(base + "/chat", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-API-Key": apiKeyInput.value.trim(), // 鉴权头，值需在后端白名单
+            "X-API-Key": apiKeyInput.value.trim(),
           },
-          body: JSON.stringify({ query, deep: deepToggle.checked }), // 请求体：问题 + 是否深度研究（多智能体）
+          body: JSON.stringify({ query, deep: deepToggle.checked }),
         });
         if (!res.ok) {
-          // 非 2xx：尽量解析后端返回的 JSON 错误详情（detail 字段），让用户看到真实原因
+          // 连接阶段就失败（如 429 限流、401 鉴权）：直接解析错误
           let detail = "HTTP " + res.status;
-          try {
-            const errJson = await res.json();
-            if (errJson && errJson.detail) detail = "HTTP " + res.status + "：" + errJson.detail;
-          } catch (_) {}
-          throw new Error(detail);
+          try { const e = await res.json(); if (e && e.detail) detail = "HTTP " + res.status + "：" + e.detail; } catch (_) {}
+          if (typingRow.parentNode) typingRow.remove();
+          if (!botCard) { botCard = addMessage("bot", ""); botMsgEl = botCard.querySelector(".bc-msg"); }
+          botMsgEl.innerHTML = "请求失败：" + escapeHtml(detail);
+          return;
         }
 
-        const data = await res.json();             // 解析 JSON
-        msgEl.classList.remove("typing-msg");      // 去掉 typing 态
-        msgEl.innerHTML = renderMarkdown(data.answer); // 用真答案替换占位
-        addSources(data.sources);                  // 展示来源标签
-        addSubQueries(data.sub_queries);          // 深度模式：展示拆解出的子问题思维链
+        // 读取流式响应：按 SSE 的 `data: {json}\n\n` 分帧解析
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          let idx;
+          // 每遇到空行分隔符就取出一帧（可能含多个 data: 行）
+          while ((idx = buf.indexOf("\n\n")) !== -1) {
+            const frame = buf.slice(0, idx);
+            buf = buf.slice(idx + 2);
+            for (const line of frame.split("\n")) {
+              const t = line.trim();
+              if (!t.startsWith("data:")) continue;
+              const payload = t.slice(5).trim();
+              if (!payload) continue;
+              try { handleEvent(JSON.parse(payload)); } catch (_) { /* 忽略无法解析的行 */ }
+            }
+          }
+        }
       } catch (err) {
-        msgEl.classList.remove("typing-msg");
-        msgEl.innerHTML = "请求失败：" + escapeHtml(err.message)
+        if (typingRow.parentNode) typingRow.remove();
+        if (!botCard) { botCard = addMessage("bot", ""); botMsgEl = botCard.querySelector(".bc-msg"); }
+        botMsgEl.innerHTML = "请求失败：" + escapeHtml(err.message)
           + "<br>请检查：后端是否已启动？设置里的地址与 API Key 是否正确？";
       } finally {
-        sendBtn.disabled = false;                  // 无论成败，恢复按钮
-        chat.scrollTop = chat.scrollHeight;        // 滚到底
-        input.focus();                             // 光标回到输入框
+        sendBtn.disabled = false;
+        chat.scrollTop = chat.scrollHeight;
+        input.focus();
       }
     }
 
     // ============ 10. 绑定事件 ============
-    form.addEventListener("submit", (e) => { e.preventDefault(); ask(); }); // 表单提交（回车/点按钮）
-    clearBtn.addEventListener("click", () => { chat.innerHTML = ""; addMessage("bot", WELCOME); }); // 清空对话（重新插入欢迎卡）
-    // 示例问题 chips：点击即发送，降低使用门槛
+    form.addEventListener("submit", (e) => { e.preventDefault(); ask(); });
+    clearBtn.addEventListener("click", () => { chat.innerHTML = ""; addMessage("bot", WELCOME); });
     document.querySelectorAll(".chip").forEach(chip =>
       chip.addEventListener("click", () => ask(chip.textContent)));
-
-    input.focus(); // 页面加载后光标自动定位到输入框
+    input.focus();
   </script>
 </body>
 </html>
