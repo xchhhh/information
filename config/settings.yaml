@@ -23,12 +23,12 @@ milvus:
   metric_type: L2           # 距离度量（L2 / COSINE）
 
 chunking:
-  chunk_size: 500           # 每块最大字符数（中文按字符切）
-  chunk_overlap: 80         # 相邻块重叠字符，保上下文连贯
+  chunk_size: 800           # 每块最大字符数（中文按字符切）；由 500 调大到 800，单块携带更完整上下文，减少答案“内容缺少”
+  chunk_overlap: 160        # 相邻块重叠字符由 80 提到 160，避免句子在块边界被截断导致信息丢失
 
 retrieval:
   top_k_retrieve: 20        # 每条检索路（稠密 / BM25）先各召回前 20
-  top_k_final: 8            # 融合 + 重排后，真正送进 LLM 的段落数（由 4 提升到 8，扩大上下文窗口以提升答案忠实度）
+  top_k_final: 10           # 融合 + 重排后送进 LLM 的段落数；由 8 提到 10，扩大上下文窗口、进一步缓解“内容缺少”（代价：上下文更大、生成略慢）
   rrf_k: 60                 # RRF 融合常数（标准默认 60）
   fusion_strategy: rrf      # 融合策略：rrf（倒数排名融合），最稳
 
@@ -50,8 +50,8 @@ langfuse:
   secret_key_env: LANGFUSE_SECRET_KEY
 
 cache:
-  enabled: false            # 先关；接语义缓存后再开
-  similarity: 0.95          # 命中缓存的余弦相似度阈值
+  enabled: true             # 开启语义缓存：相似问题直接命中历史答案，重复/换种问法也能秒回，显著缓解“回答速度太慢”
+  similarity: 0.95          # 命中缓存的余弦相似度阈值（0.95 较严格，避免答非所问）
 
 auth:
   api_keys:                 # 网站调用后端时的鉴权 key 列表（部署前务必改掉 change_me）
