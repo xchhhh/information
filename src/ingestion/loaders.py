@@ -57,7 +57,9 @@ def _load_pdf(path):
 def _load_docx(path):
     """用 docx2txt 读取 .docx（Word 2007+，纯 Python，无需系统包）。"""
     if not _HAS_DOCX2TXT:
-        raise RuntimeError("处理 .docx 需先 pip install docx2txt")
+        # 未安装时不崩溃整个入库，跳过并明确提示去装包
+        logger.warning("[loaders] 处理 .docx 需先 pip install docx2txt，已跳过 %s", path)
+        return []
     text = docx2txt.process(path) or ""
     return [Document(page_content=text, metadata={"source": path})]
 
