@@ -16,7 +16,7 @@ RAW_DIR = os.path.join(BASE_DIR, "data", "raw")
 # BM25 稀疏检索语料路径：入库时生成，用来判断"是否已入库"
 BM25_PATH = os.path.join(BASE_DIR, "data", "processed", "bm25_corpus.pkl")
 # 允许上传的文件类型（与 ingestion/loaders.py 支持的格式保持一致）
-ALLOWED_EXT = {".txt", ".md", ".pdf"}
+ALLOWED_EXT = {".txt", ".md", ".pdf", ".doc", ".docx", ".png", ".jpg", ".jpeg"}
 # 单个文件大小上限 20MB，防止有人传超大文件把内存打爆
 MAX_SIZE = 20 * 1024 * 1024
 

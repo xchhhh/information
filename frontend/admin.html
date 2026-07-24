@@ -332,11 +332,11 @@
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg></span>
         ② 上传资料
       </h2>
-      <p class="hint">支持 .txt / .md / .pdf，单文件 ≤ 20MB。上传后落到 data/raw，再点下方"重新入库"才会进向量库。</p>
+      <p class="hint">支持 .txt / .md / .pdf / .doc / .docx / 图片(.png,.jpg)，单文件 ≤ 20MB。上传后落到 data/raw，再点下方"重新入库"才会进向量库。注：图片与扫描件 PDF 暂仅支持上传，文字识别(OCR)将在下一步加入。</p>
       <div class="upload-zone" id="uploadZone">
         把资料拖进来，或
         <br>
-        <input id="fileInput" type="file" multiple accept=".txt,.md,.pdf" aria-label="选择要上传的资料" />
+        <input id="fileInput" type="file" multiple accept=".txt,.md,.pdf,.doc,.docx,.png,.jpg,.jpeg" aria-label="选择要上传的资料" />
       </div>
       <button id="btnUpload" class="btn" type="button">上传选中文件</button>
       <div id="uploadResult" class="result"></div>

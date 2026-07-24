@@ -19,3 +19,5 @@ requests
 gptcache
 langfuse
 ragas
+pdfplumber
+docx2txt

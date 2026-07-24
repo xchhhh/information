@@ -153,3 +153,33 @@ journalctl -u rag -n 50 --no-pager               # systemd 服务日志
 - 配置：`config/settings.yaml`（含 `auth.api_keys`、`orchestrator.*`）
 - 知识库原始文件：`data/raw/`｜入库后向量：`data/`（Milvus-Lite 嵌入式）
 - 服务端日志：`data/server.log`
+
+---
+
+## 8. 文件格式支持（入库扩展）
+
+> 自本次起，`data/raw` 支持更多格式。入库解析在 `src/ingestion/loaders.py`。
+
+| 格式 | 解析方式 | 备注 |
+|------|----------|------|
+| `.txt` / `.md` | `TextLoader` | 不变 |
+| `.pdf` | `pdfplumber`（优先），失败回退 `PyPDFLoader` | 更鲁棒：支持加密明文、表格、残缺；整篇空读会**打日志告警**（疑似扫描件）而非静默 |
+| `.docx` | `docx2txt`（纯 Python） | 无需系统包 |
+| `.doc`（老版 Word 97-2003） | `antiword` 或 `libreoffice` 系统命令 | **需服务器装系统包**（见下）；都没装会抛清晰错误而非静默丢内容 |
+| `.png` / `.jpg` / `.jpeg` | 占位：友好跳过 + 日志 | **OCR 尚未启用**，本次仅放开上传口子，文字识别在第二步加入 |
+
+**新增 Python 依赖**：`pdfplumber`、`docx2txt`（已写入 `requirements.txt`）。
+重新入库前务必补装：
+```bash
+/root/information/.venv/bin/pip install -r /root/information/requirements.txt
+```
+
+**`.doc` 系统包安装（按需）**
+```bash
+# TencentOS / CentOS
+yum install -y antiword
+# 或安装更重的 libreoffice（最通用，但体积大、启动慢）
+# yum install -y libreoffice-headless
+```
+
+**上传白名单**：后端 `src/api/admin.py` 的 `ALLOWED_EXT` 与前端 `admin.html` 的 `accept` 已同步放开。
